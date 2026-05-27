@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use enesys in research or publication, please cite as below."
+title: "enesys — Energy-system model with camp-symmetric ranges and forward-cost methodology"
+version: 0.1.0
+date-released: 2026-05-27
+abstract: >-
+  Reproducible open-source energy-system model for Germany 2026–2055.
+  Quantity-balance architecture with forward-cost convention (sunk
+  investments tracked separately). Camp-symmetric parameter ranges
+  (EE-/atom-/bestand-optimistic plus neutral-default). Cross-validation
+  against external assumption substrates (Ariadne/PyPSA-DE as first
+  ParamSet). Six paths: WEITER-SO, EE-GAS, EE-H2, KKW-GAS, KKW-H2,
+  BESTAND.
+authors:
+  - family-names: Hardung
+    given-names: Bernd
+    email: bernd@hardung.de
+license: MIT
+repository-code: "https://github.com/berndhardung/enesys"
+type: software
+keywords:
+  - energy-system-model
+  - germany
+  - forward-cost
+  - lcoe
+  - levelized-cost-of-energy
+  - energy-transition
+  - lager-symmetrie
+  - reproducible-research

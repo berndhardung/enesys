@@ -1,0 +1,107 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enesys"
+dynamic = ["version"]
+description = "Forward-cost analysis of Germany's energy transition — 6 paths, Monte-Carlo, fully open and reproducible"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Bernd Hardung", email = "bernd@hardung.de" },
+]
+keywords = [
+    "energy",
+    "energiewende",
+    "renewable-energy",
+    "nuclear-power",
+    "energy-transition",
+    "lcoe",
+    "monte-carlo",
+    "sensitivity-analysis",
+    "germany",
+    "open-data",
+    "reproducible-research",
+    "climate-policy",
+    "camp-symmetric-sensitivity",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+
+dependencies = [
+    "numpy>=1.26.0,<3.0",
+]
+
+[project.optional-dependencies]
+ui = [
+    "streamlit>=1.32.0,<2.0",
+    "plotly>=5.18.0,<7.0",
+    "pandas>=2.1.0,<3.0",
+]
+charts = [
+    "matplotlib>=3.8.0,<4.0",
+]
+dev = [
+    "pytest>=7.4,<9.0",
+    "pytest-cov>=4.1,<6.0",
+    "ruff>=0.4,<1.0",
+    "pre-commit>=3.5,<5.0",
+    "mypy>=1.10,<2.0",
+    "qrcode[pil]>=7.4,<9.0",
+    "tomli>=2.0,<3.0; python_version < '3.11'",
+    "build>=1.0,<2.0",
+]
+all = [
+    "enesys[ui,charts,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/berndhardung/enesys"
+Documentation = "https://github.com/berndhardung/enesys/tree/main/docs"
+Issues = "https://github.com/berndhardung/enesys/issues"
+Changelog = "https://github.com/berndhardung/enesys/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.dynamic]
+version = { file = "VERSION" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short -p no:anyio --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+ignore = ["E501"]  # line length handled by formatter
+
+# mypy-Konfiguration. Aktiver Strict-Modus für disallow_untyped_defs und
+# check_untyped_defs; strict_optional ist noch nicht aktiv.
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = false
+warn_unused_ignores = true
+ignore_missing_imports = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+strict_optional = false

@@ -303,7 +303,7 @@ Endpreis_EE-H2 = 9,00 + 0,84 + 7,0 + 0,36 + 5,0 + 0,11 - 0,08
 Hinweis: Die Forward-Cost-Variante (ohne Steuern) liegt bei
 0,40 × 6,0 + … + 0,08 × 32,0 + Speicher + Netz + CO₂ + Stabilität − Flex-Rabatt
 = 17,23 ct/kWh in dieser Single-Year-Beispielrechnung. Im 30-Jahres-Mittel
-ergibt das Modell für EE-H2 17,17 ct/kWh (neutral_default-Lager) — die
+ergibt das Modell für EE-H2 17,26 ct/kWh (neutral_default-Lager) — die
 Differenz kommt von Lernkurven (PV-LCOE sinkt von 6,0 auf 4,0 ct,
 H₂-LCOE von 45 auf 20 ct bis 2050) sowie Demand-gewichtetem Mittel.
 

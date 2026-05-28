@@ -146,26 +146,36 @@ Four properties — each verifiable in the code, not just claims.
 | **KKW-H2** | Renewables + Nuclear + H₂-Backup | Reveals structural independence of backup choice |
 
 Headline finding under default assumptions (30-year average 2026-2055,
-`neutral_default` camp):
+`neutral_default` camp; CO₂ on a **system boundary** — power-sector
+emissions plus external sector-coupling emissions from heating and
+mobility that remain fossil in WEITER-SO/BESTAND):
 
-| Path | Cost (LCOE) | Cumulative CO₂ | vs WEITER-SO |
+| Path | Cost (LCOE) | Cumulative CO₂ (system boundary) | vs WEITER-SO |
 |---|---|---|---|
-| **EE-GAS** | **16.56 ct/kWh** | 1,825 Mt | saves 95 Mt |
-| WEITER-SO | 16.92 ct/kWh | 1,920 Mt | (baseline) |
-| EE-H2 | 17.17 ct/kWh | **1,610 Mt** | saves 310 Mt |
-| BESTAND | 17.30 ct/kWh | 2,272 Mt | adds 352 Mt |
-| KKW-GAS | 17.31 ct/kWh | 2,194 Mt | adds 274 Mt |
-| KKW-H2 | 17.63 ct/kWh | 1,952 Mt | adds 32 Mt |
+| **EE-GAS** | **16.79 ct/kWh** | 2,937 Mt | saves 1,495 Mt (−34 %) |
+| WEITER-SO | 16.97 ct/kWh | 4,432 Mt | (baseline) |
+| EE-H2 | 17.26 ct/kWh | **2,689 Mt** | saves 1,743 Mt (−39 %) |
+| BESTAND | 17.33 ct/kWh | 4,870 Mt | adds 438 Mt |
+| KKW-GAS | 17.57 ct/kWh | 3,312 Mt | saves 1,120 Mt (−25 %) |
+| KKW-H2 | 17.82 ct/kWh | 3,022 Mt | saves 1,410 Mt (−32 %) |
 
 **EE-GAS is the cost optimum in the neutral camp; EE-H2 has the lowest
-cumulative CO₂.** The gap from EE-GAS to WEITER-SO is just 0.36 ct/kWh
+cumulative CO₂.** The gap from EE-GAS to WEITER-SO is just 0.18 ct/kWh
 — supporting the "humility thesis" that **political inaction is
 economically nearly as expensive as the most pragmatic active path**,
-only with higher emissions. KKW-paths cost more without a clear CO₂
-payoff in return. BESTAND — an "existing-fleet" emphasis with dampened
-EE expansion — is the worst on the CO₂ axis. **Other camps yield other
-top paths** (see distinctive property 3 above); the recommendation
-comes from min-max-regret across camps, not from this single table.
+only with higher emissions. A power-sector-only CO₂ view would
+understate WEITER-SO and BESTAND by roughly a factor of two — their
+fossil heating and mobility don't show up in the power sector but in
+`r.co2_external_mt_per_year`, which the system-boundary total
+aggregates. **BESTAND is the worst path on CO₂** (4,870 Mt — even
+higher than political inaction) because dampened sector-coupling
+carries fossil-heating and fossil-mobility emissions forward. KKW-paths
+also emit *more* system-boundary CO₂ than their EE counterparts within
+the 30-year window (KKW-GAS 3,312 vs EE-GAS 2,937 Mt) — bridge-phase
+construction emissions outweigh later operational gains.
+**Other camps yield other top paths** (see distinctive property 3
+above); the recommendation comes from min-max-regret across camps, not
+from this single table.
 
 Numbers reproducible with `python -c "from enesys import compute_path; ..."`
 (see Quickstart below).

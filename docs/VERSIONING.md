@@ -112,6 +112,20 @@ standard container case (e.g. Docker build).
 The `VERSION` file is central and is bumped only explicitly. There is
 no automatic bumping.
 
+### What about the version in `pyproject.toml`?
+`pyproject.toml` carries a static `version = "X.Y.Z"` field that must
+be bumped in lock-step with `VERSION` at release time. The static
+declaration exists because `uv lock` cannot represent a dynamic
+version in its lockfile (the resulting `[[package]] name = "enesys"`
+entry has no `version =` field, which downstream uv consumers — e.g.
+Streamlit Community Cloud's deploy installer — reject). Runtime
+version lookup (`get_version()` / `enesys.__version__`) continues to
+read the `VERSION` file directly via `version.py`, so it stays the
+source of truth for the build-time-stamped string with git hash and
+date. Release-time bump touches three places together:
+`pyproject.toml` (static), `VERSION` (file), and `CITATION.cff`
+(`version` + `date-released`).
+
 ---
 
 **Note for maintainers.** The release workflow (creating a stable

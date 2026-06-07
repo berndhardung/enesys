@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "enesys"
-dynamic = ["version"]
+version = "0.2.0"
 description = "Forward-cost analysis of Germany's energy transition — 6 paths, Monte-Carlo, fully open and reproducible"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -41,18 +41,20 @@ classifiers = [
 ]
 
 dependencies = [
+    # Model core
     "numpy>=1.26.0,<3.0",
+    # Streamlit UI + companion charts. The compare view is part of the
+    # OSS deliverable, not an optional extra; Streamlit Community Cloud
+    # installs the base dependency set automatically. Anyone who really
+    # only wants the model can install with ``--no-deps`` and pull
+    # numpy manually.
+    "streamlit>=1.36.0,<2.0",
+    "plotly>=5.18.0,<7.0",
+    "pandas>=2.1.0,<3.0",
+    "matplotlib>=3.8.0,<4.0",
 ]
 
 [project.optional-dependencies]
-ui = [
-    "streamlit>=1.32.0,<2.0",
-    "plotly>=5.18.0,<7.0",
-    "pandas>=2.1.0,<3.0",
-]
-charts = [
-    "matplotlib>=3.8.0,<4.0",
-]
 dev = [
     "pytest>=7.4,<9.0",
     "pytest-cov>=4.1,<6.0",
@@ -64,7 +66,7 @@ dev = [
     "build>=1.0,<2.0",
 ]
 all = [
-    "enesys[ui,charts,dev]",
+    "enesys[dev]",
 ]
 
 [project.urls]
@@ -76,8 +78,13 @@ Changelog = "https://github.com/berndhardung/enesys/blob/main/CHANGELOG.md"
 [tool.setuptools]
 package-dir = { "" = "src" }
 
-[tool.setuptools.dynamic]
-version = { file = "VERSION" }
+# Runtime-Version wird in ``src/enesys/version.py`` aus der
+# ``VERSION``-Datei + Git-Status ermittelt (siehe docs/VERSIONING.md).
+# Für Build-Metadaten ist die Version oben in ``[project]`` statisch
+# gepinnt — uv lock kann mit dynamic-version-Paketen nicht umgehen
+# (kein ``version =``-Feld im uv.lock-Eintrag → Streamlit-Cloud-uv
+# rejected den Lock). Bei Release: beide Stellen mit-bumpen
+# (``[project] version`` plus ``VERSION``-Datei).
 
 [tool.setuptools.packages.find]
 where = ["src"]

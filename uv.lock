@@ -520,30 +520,27 @@ wheels = [
 
 [[package]]
 name = "enesys"
-version = "0.0.1a1"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
+    { name = "matplotlib" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pandas" },
+    { name = "plotly" },
+    { name = "streamlit" },
 ]
 
 [package.optional-dependencies]
 all = [
     { name = "build" },
-    { name = "matplotlib" },
     { name = "mypy" },
-    { name = "pandas" },
-    { name = "plotly" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "qrcode", extra = ["pil"] },
     { name = "ruff" },
-    { name = "streamlit" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
-]
-charts = [
-    { name = "matplotlib" },
 ]
 dev = [
     { name = "build" },
@@ -555,30 +552,25 @@ dev = [
     { name = "ruff" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
 ]
-ui = [
-    { name = "pandas" },
-    { name = "plotly" },
-    { name = "streamlit" },
-]
 
 [package.metadata]
 requires-dist = [
     { name = "build", marker = "extra == 'dev'", specifier = ">=1.0,<2.0" },
-    { name = "enesys", extras = ["ui", "charts", "dev"], marker = "extra == 'all'" },
-    { name = "matplotlib", marker = "extra == 'charts'", specifier = ">=3.8.0,<4.0" },
+    { name = "enesys", extras = ["dev"], marker = "extra == 'all'" },
+    { name = "matplotlib", specifier = ">=3.8.0,<4.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10,<2.0" },
     { name = "numpy", specifier = ">=1.26.0,<3.0" },
-    { name = "pandas", marker = "extra == 'ui'", specifier = ">=2.1.0,<3.0" },
-    { name = "plotly", marker = "extra == 'ui'", specifier = ">=5.18.0,<7.0" },
+    { name = "pandas", specifier = ">=2.1.0,<3.0" },
+    { name = "plotly", specifier = ">=5.18.0,<7.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.5,<5.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4,<9.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1,<6.0" },
     { name = "qrcode", extras = ["pil"], marker = "extra == 'dev'", specifier = ">=7.4,<9.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4,<1.0" },
-    { name = "streamlit", marker = "extra == 'ui'", specifier = ">=1.32.0,<2.0" },
+    { name = "streamlit", specifier = ">=1.36.0,<2.0" },
     { name = "tomli", marker = "python_full_version < '3.11' and extra == 'dev'", specifier = ">=2.0,<3.0" },
 ]
-provides-extras = ["ui", "charts", "dev", "all"]
+provides-extras = ["dev", "all"]
 
 [[package]]
 name = "exceptiongroup"

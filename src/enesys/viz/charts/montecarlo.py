@@ -24,12 +24,19 @@ from typing import TYPE_CHECKING, Any
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
-from enesys.viz.charts._helpers import Variant, add_oss_footer, dpi_for_variant
+from enesys.viz.charts._helpers import (
+    Variant,
+    add_oss_footer,
+    dpi_for_variant,
+    figsize_for_variant,
+)
+from enesys.viz.charts.labels import label as _label
 from enesys.viz.matplotlib_style import (
     PRINT_FONT_SIZE_ANNOT,
     PRINT_FONT_SIZE_BAR_LABEL,
     PRINT_FONT_SIZE_LEGEND,
     STD_FIGSIZE_DOUBLE,
+    apply_mobile_style,
     apply_print_style,
 )
 from enesys.viz.theme import PATH_COLORS
@@ -76,6 +83,7 @@ def compute_monte_carlo_data(
     seed: int = 42,
     camp: str = "neutral_default",
     param_set: str | None = None,
+    param_overrides: dict[str, float] | None = None,
     year: int = 2026,
     path_names: tuple[str, ...] = DEFAULT_PATH_NAMES,
     reference: str = DEFAULT_REFERENCE,
@@ -98,6 +106,9 @@ def compute_monte_carlo_data(
 
         overrides_per_year = _get_param_set(param_set).overrides_yearly([year])
         baseline_overrides = overrides_per_year.get(year)
+
+    if param_overrides:
+        baseline_overrides = {**(baseline_overrides or {}), **param_overrides}
 
     mc = monte_carlo_all_paths(
         year=year,
@@ -124,7 +135,9 @@ def compute_monte_carlo_data(
     )
 
 
-def _draw_violin_panel(ax: Axes, data: MonteCarloData, *, variant: Variant) -> None:
+def _draw_violin_panel(
+    ax: Axes, data: MonteCarloData, *, variant: Variant, lang: str = "de"
+) -> None:
     """Zeichnet das Violin-Panel (LCOE-Verteilung pro Pfad).
 
     Subplot-Titel: bei ``embedded`` ausgelassen (umgebende Caption erklärt),
@@ -158,10 +171,10 @@ def _draw_violin_panel(ax: Axes, data: MonteCarloData, *, variant: Variant) -> N
 
     ax.set_xticks(range(1, len(data.path_names) + 1))
     ax.set_xticklabels(data.path_names)
-    ax.set_ylabel("Forward Cost (ct/kWh)", fontsize=PRINT_FONT_SIZE_ANNOT)
+    ax.set_ylabel(_label("montecarlo.ylabel", lang), fontsize=PRINT_FONT_SIZE_ANNOT)
     if variant != "embedded":
         ax.set_title(
-            f"LCOE-Verteilung über {data.n_runs} Annahmen-Konstellationen",
+            _label("montecarlo.violin_title", lang),
             fontsize=PRINT_FONT_SIZE_ANNOT + 2,
             fontweight="bold",
         )
@@ -169,7 +182,9 @@ def _draw_violin_panel(ax: Axes, data: MonteCarloData, *, variant: Variant) -> N
     ax.set_axisbelow(True)
 
 
-def _draw_winprob_panel(ax: Axes, data: MonteCarloData, *, variant: Variant) -> None:
+def _draw_winprob_panel(
+    ax: Axes, data: MonteCarloData, *, variant: Variant, lang: str = "de"
+) -> None:
     """Zeichnet das Win-Probability-Panel.
 
     Subplot-Titel: bei ``embedded`` ausgelassen (umgebende Caption erklärt),
@@ -198,14 +213,16 @@ def _draw_winprob_panel(ax: Axes, data: MonteCarloData, *, variant: Variant) -> 
         )
 
     ax.axvline(50, color="gray", linestyle="--", linewidth=1, alpha=0.5)
-    ax.axvline(95, color="green", linestyle=":", linewidth=1, alpha=0.7, label="95 %-Schwelle")
+    threshold_label = "95 % threshold" if lang == "en" else "95 %-Schwelle"
+    ax.axvline(95, color="green", linestyle=":", linewidth=1, alpha=0.7, label=threshold_label)
     ax.set_xlim(0, 105)
     ax.set_xlabel(
-        f"P({data.reference} günstiger als anderer Pfad) in %", fontsize=PRINT_FONT_SIZE_ANNOT
+        _label("montecarlo.winprob_xlabel", lang, ref=data.reference),
+        fontsize=PRINT_FONT_SIZE_ANNOT,
     )
     if variant != "embedded":
         ax.set_title(
-            f"Wie robust ist {data.reference}?",
+            _label("montecarlo.winprob_title", lang),
             fontsize=PRINT_FONT_SIZE_ANNOT + 2,
             fontweight="bold",
         )
@@ -222,22 +239,30 @@ def _name_to_id(display_label: str) -> str:
 
 def render_monte_carlo(
     data: MonteCarloData,
-    out_path: Path | str,
+    out_path: Path | str | None = None,
     *,
     variant: Variant = "embedded",
     title: str | None = None,
     subtitle: str | None = None,
     brand: BrandConfig | None = None,
-) -> None:
+    return_fig: bool = False,
+    lang: str = "de",
+) -> plt.Figure | None:
     """Rendert das Monte-Carlo-Side-by-Side (Violin + Win-Probability)."""
-    apply_print_style()
+    apply_mobile_style() if variant == "mobile" else apply_print_style()
 
-    fig, (ax_violin, ax_bar) = plt.subplots(
-        1, 2, figsize=STD_FIGSIZE_DOUBLE, gridspec_kw={"width_ratios": [1.5, 1], "wspace": 0.3}
-    )
+    figsize = figsize_for_variant(variant, STD_FIGSIZE_DOUBLE)
+    if variant == "mobile":
+        fig, (ax_violin, ax_bar) = plt.subplots(
+            2, 1, figsize=figsize, gridspec_kw={"height_ratios": [1.5, 1], "hspace": 0.4}
+        )
+    else:
+        fig, (ax_violin, ax_bar) = plt.subplots(
+            1, 2, figsize=figsize, gridspec_kw={"width_ratios": [1.5, 1], "wspace": 0.3}
+        )
 
-    _draw_violin_panel(ax_violin, data, variant=variant)
-    _draw_winprob_panel(ax_bar, data, variant=variant)
+    _draw_violin_panel(ax_violin, data, variant=variant, lang=lang)
+    _draw_winprob_panel(ax_bar, data, variant=variant, lang=lang)
 
     if variant == "standalone" and title:
         fig.suptitle(title, fontsize=16, fontweight="bold", y=0.99)
@@ -259,6 +284,11 @@ def render_monte_carlo(
     plt.subplots_adjust(bottom=0.14)
     add_oss_footer(fig)
 
+    if return_fig:
+        return fig
+
+    if out_path is None:
+        raise ValueError("out_path must be set when return_fig=False")
     out_path = Path(out_path)
     dpi = dpi_for_variant(variant)
     if variant == "web":
@@ -270,3 +300,4 @@ def render_monte_carlo(
             out_path = out_path.with_suffix(".png")
         fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
+    return None

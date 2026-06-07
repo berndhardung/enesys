@@ -27,6 +27,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from .inventories.tech_inventory import override_kkw_epr_startjahr
 from .rolling_lcoe import rolling_lcoe
 
 # Schaden-Skalierung
@@ -146,3 +147,111 @@ def damage_bn_eur(regret_ct_per_kwh: float) -> float:
     Skalierung: Reue × 30 J × 858 TWh / 100 (Cent-zu-Euro-Faktor).
     """
     return regret_ct_per_kwh * YEARS * DEMAND_TWH / 100
+
+
+# ---------------------------------------------------------------------------
+# Robustheits-Check: Minimax-Reue als Funktion des KKW-Startjahrs.
+#
+# Die kanonischen Lager-Startjahre (atom_optimistic 2036, neutral_default
+# / bestand 2046, ee_optimistic 2050) folgen aus
+# ``KKW_EPR_APPROVAL_YEAR`` plus sqrt-Streckung der Bauzeit je
+# Lager-Realisierungsgrad — sie sind also vom Realgrad-Belief abhängig.
+# Eine separate Frage ist: wie verschiebt sich die Minimax-Reue, wenn
+# das KKW-Startjahr unabhängig vom Lager-Realgrad direkt variiert wird?
+# ``nuclear_start_year_regret_analysis`` verwendet den Kontext-Manager
+# ``override_kkw_epr_startjahr`` aus ``tech_inventory``, der das
+# Startjahr für jedes Lager einheitlich auf den Kandidaten-Wert X setzt
+# und nach dem ``with``-Block den Original-Zustand wiederherstellt.
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class NuclearStartYearRegretPoint:
+    """Ein Punkt aus dem KKW-Startjahr-Robustheits-Check.
+
+    Felder:
+        nuclear_start_year: angenommenes Startjahr (für alle Lager
+            identisch gesetzt)
+        max_regret_per_policy: max-Reue pro Politik über die vier Welten
+        minimax_winner: Politik mit minimaler max-Reue (regret-optimal)
+        kkw_gas_regret_ee_world: Reue von KKW-GAS in der ee_optimistic-
+            Welt (häufig der bindende Term für KKW-Politik)
+    """
+
+    nuclear_start_year: int
+    max_regret_per_policy: dict[PolicyChoice, float]
+    minimax_winner: PolicyChoice
+    kkw_gas_regret_ee_world: float
+
+
+def nuclear_start_year_regret_analysis(
+    nuclear_start_years: range | list[int] | tuple[int, ...],
+) -> list[NuclearStartYearRegretPoint]:
+    """Reue-Matrix als Funktion des KKW-Startjahrs.
+
+    Für jeden Kandidaten wird ``tech_inventory.kkw_epr_startjahr`` über
+    ``override_kkw_epr_startjahr`` so gesetzt, dass *alle* Lager
+    dieses Startjahr liefern (das Lager-Heterogen des
+    KKW-Realisierungsgrads wird damit ausgeschaltet — die Funktion
+    beantwortet die hypothetische Frage »wenn KKW in jeder Welt
+    verlässlich zu Jahr X verfügbar wäre …«).
+
+    Args:
+        nuclear_start_years: Iterable über Startjahr-Kandidaten
+            (z. B. ``range(2028, 2056, 2)``).
+
+    Returns:
+        Liste von ``NuclearStartYearRegretPoint`` in Eingabe-Reihenfolge.
+    """
+    points: list[NuclearStartYearRegretPoint] = []
+    for year in nuclear_start_years:
+        with override_kkw_epr_startjahr(int(year)):
+            matrix = compute_regret_matrix()
+            max_regret = minimax_regret_per_policy(matrix)
+            winner = min(max_regret, key=lambda p: max_regret[p])
+            kkw_gas_in_ee_world = next(
+                c.regret_ct_kwh
+                for c in matrix
+                if c.policy is PolicyChoice.KKW_GAS and c.world == "ee_optimistic"
+            )
+            points.append(
+                NuclearStartYearRegretPoint(
+                    nuclear_start_year=int(year),
+                    max_regret_per_policy=dict(max_regret),
+                    minimax_winner=winner,
+                    kkw_gas_regret_ee_world=kkw_gas_in_ee_world,
+                )
+            )
+    return points
+
+
+def kkw_regret_crossover_year(
+    search_range: range | tuple[int, int] = (2026, 2055),
+) -> int | None:
+    """Frühestes KKW-Startjahr, ab dem eine KKW-Politik regret-optimal wird.
+
+    Liefert ``None``, wenn KKW-Politik im gesamten Suchbereich nicht
+    Minimax-Regret-Sieger wird — das Startjahr ist dann nicht der
+    bindende Constraint, und eine frühere KKW-Verfügbarkeit würde die
+    Empfehlung nicht kippen.
+
+    Args:
+        search_range: ``range`` oder ``(low, high)``-Tupel,
+            interpretiert als ``range(low, high + 1)``.
+
+    Returns:
+        Frühestes Startjahr, ab dem der Minimax-Sieger eine KKW-Politik
+        ist, oder ``None`` falls KKW im Bereich nie gewinnt.
+    """
+    if isinstance(search_range, tuple):
+        lo, hi = search_range
+        years = range(lo, hi + 1)
+    else:
+        years = search_range
+
+    analysis = nuclear_start_year_regret_analysis(years)
+    kkw_policies = {PolicyChoice.KKW_GAS, PolicyChoice.KKW_H2}
+    for point in analysis:
+        if point.minimax_winner in kkw_policies:
+            return point.nuclear_start_year
+    return None

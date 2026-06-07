@@ -6,17 +6,13 @@ beim Update einer Quelle die Konsistenz im gesamten Repo gewahrt bleibt.
 
 **Kontext.** Werte wie der heutige BDEW-Haushaltsstrompreis (37,0 ct/kWh)
 oder die Anzahl der Privathaushalte (41 Mio.) erscheinen an vielen Stellen:
-Slider-Defaults, Tooltips, Heute-Tabelle, Buch-Tiefen-Boxen, Web-Dashboard.
-Diese Tests prüfen, dass:
+Slider-Defaults, Tooltips, Heute-Tabelle, Web-Dashboard. Diese Tests
+prüfen, dass:
 
 1. Die zentrale Quelle ist die Wahrheit (Schema, Plausibilität).
 2. Slider-Defaults beziehen ihre Werte aus der Quelle, nicht hardcoded.
 3. Die exportierte JSON ist mit der Python-Quelle konsistent.
 4. Kalibrierung der Verbraucher-Brücke stimmt zur zentralen Quelle.
-
-Die Buch-Konsistenz-Tests für dieselben Werte (BDEW-Brutto, Haushalts-Anzahl
-im Manuskript) liegen in ``tests/consistency/test_buch_endverbraucher_konsistenz.py``
-— Privat-only, nicht im OSS-Mirror.
 """
 
 from __future__ import annotations
@@ -240,9 +236,8 @@ class TestSourceTagsInSourcesMd:
 # ===========================================================================
 # 6. JSON-Datei ist aktuell (write/read-Roundtrip)
 # ===========================================================================
-# Buch-Manuskript-Konsistenz für Endverbraucher-Werte ist nach
-# tests/consistency/test_buch_endverbraucher_konsistenz.py ausgelagert
-# (Privat-only, im OSS-Mirror nicht enthalten).
+# JSON-Roundtrip-Check; weiterführende Konsistenz-Tests für
+# Endverbraucher-Werte sind aus diesem Modul ausgelagert.
 
 
 class TestJsonAktuell:

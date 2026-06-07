@@ -133,7 +133,7 @@ CAMP_NUCLEAR_REALIZATION = CAMP_NUCLEAR_WORLD_BELIEF
 #
 # Eine vollständige Integration von Battery in die primäre Dispatch-Schleife
 # (Battery in ``dispatch_used``, Charge-Pool aus PV/Wind-Überschuss) verlangt
-# Stunden-Granularität und ist als eigene Welle nach V1.0 vorgesehen.
+# Stunden-Granularität und ist hier bewusst nicht abgebildet.
 _BATTERY_RTE: float = 0.85
 """Round-trip-Efficiency LFP-Battery (AC-AC, inkl. Inverter-Verluste).
 

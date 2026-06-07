@@ -73,7 +73,7 @@ _check-deps:
 	  echo ""; \
 	  echo "Wenn Du eine eigene venv pflegst, dort installieren:"; \
 	  echo ""; \
-	  echo "    pip install -e '.[charts,dev]'"; \
+	  echo "    pip install -e '.[dev]'"; \
 	  echo ""; \
 	  exit 1; \
 	}

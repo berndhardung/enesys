@@ -14,6 +14,13 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/berndhardung/enesys/blob/main/notebooks/01_quickstart.ipynb)
 
+![Six-path stress-test ramp-up 2026–2055](docs/_static/headline_stress_rampup.png)
+
+*Each panel shows one path's capacity build-up over 2026–2055 against
+the dark-doldrum peak-demand line (LOLE-P95 reserve standard).
+Red-hatched zones mark residual demand the backup architecture cannot
+cover. Reproduce: `python examples/generate_chart_stress_rampup.py`.*
+
 **The German energy debate argues about the wrong axis.** Most
 discussions ask: renewable or nuclear? But the actual decision is
 two-dimensional — base-load × backup. This repository contains the
@@ -23,7 +30,8 @@ plausible set of assumptions?
 
 | Want to … | Then look at … |
 |-----------|----------------|
-| **Try it without installing anything** | [Open the Quickstart notebook in Colab](https://colab.research.google.com/github/berndhardung/enesys/blob/main/notebooks/01_quickstart.ipynb) — 5 minutes, no setup |
+| **Try the interactive app** | [Live demo on Streamlit Community Cloud](https://enesys.streamlit.app) — anchor camp left, variant camp right, six charts side by side |
+| **Try the model without installing anything** | [Open the Quickstart notebook in Colab](https://colab.research.google.com/github/berndhardung/enesys/blob/main/notebooks/01_quickstart.ipynb) — 5 minutes, no setup |
 | **Use the model programmatically** | [Quickstart §](#use-the-model-programmatically) — six lines of Python |
 | **Audit the assumptions** | [`docs/SOURCES.md`](docs/SOURCES.md) — every default with primary-source tag |
 | **See the formulas** | [`docs/FORMULAS.md`](docs/FORMULAS.md) — derivation and worked examples |
@@ -91,48 +99,47 @@ model is doing inside its narrower lens.
 
 ## What makes this distinctive
 
-Four properties — each verifiable in the code, not just claims.
+Five properties — each verifiable in the code, not just claims. Full
+discussion in [`docs/methodik/methodology.md`](docs/methodik/methodology.md).
 
-1. **Forward-cost framing as a structural choice.** Sunk costs (KKW
-   decommissioning fund, EEG-Altlast, Endlager — nuclear-waste —
-   fund) sit in dedicated context fields and are *deliberately
-   excluded* from the LCOE arithmetic. Most policy discussions
-   silently mix the two; this model makes the distinction visible in
-   the code itself
-   ([`src/enesys/core/path_model.py`](src/enesys/core/path_model.py)
-   `compute_path` plus
-   [`src/enesys/core/path_inputs.py`](src/enesys/core/path_inputs.py)).
+1. **Forward-cost framing, sunk costs excluded by construction.** KKW
+   decommissioning fund, EEG-Altlast, Endlager fund sit in dedicated
+   context fields and never enter the LCOE arithmetic. Most policy
+   discussions silently mix the two.
+   ([`core/path_model.py`](src/enesys/core/path_model.py),
+   [`core/path_inputs.py`](src/enesys/core/path_inputs.py))
 
-2. **Two-dimensional path space (base-load × backup, six paths).**
-   Much of the public debate compresses the decision into one axis
-   (renewables vs. nuclear). The model treats base-load source and
-   backup vector as *independent* axes — that's why KKW-GAS and KKW-H₂
-   exist as separate paths, and why the symmetric EE pair makes sense.
-   The "renewable or nuclear?" framing turns out to be the wrong
-   question once both axes are explicit.
+2. **Two-dimensional path space (base-load × backup).** Six paths, not
+   the usual one-axis "renewables vs nuclear" framing. KKW-GAS and
+   KKW-H₂ exist as separate paths precisely because the backup vector
+   is independent of the base-load source.
 
-3. **Camp-symmetric methodology — no built-in bias in the point estimate.**
-   Every contested parameter (nuclear CAPEX, electrolysis cost, gas
-   price, WACC, …) carries an EE-optimistic and an atom-optimistic
-   alternative alongside the neutral default, plus a bestand-optimistic
-   variant. In the point estimate **each camp gets its preferred path**:
-   atom_optimistic → KKW-GAS as cheapest, the three other camps → EE-GAS.
-   The recommendation (EE-GAS) does *not* follow from "EE wins everywhere"
-   — it follows from **min-max-regret across the four camps**: picking
-   KKW-policy in an EE-friendly world loses roughly twice as much as
-   picking EE-policy in a KKW-friendly world (the asymmetry comes from
-   nuclear's IBN landing after 2045 in three of four camps). See
-   `CAMP_RANGES` in [`src/enesys/core/camp_ranges.py`](src/enesys/core/camp_ranges.py).
+3. **Camp-symmetric defaults — no built-in bias.** Every contested
+   parameter carries EE-/atom-/bestand-optimistic alternatives
+   alongside the neutral default. In the point estimate each camp wins
+   its preferred path (atom_optimistic → KKW-GAS, three others →
+   EE-GAS). The recommendation (EE-GAS) follows from **min-max-regret
+   across the four camps**, not from "EE wins everywhere".
+   ([`core/camp_ranges.py`](src/enesys/core/camp_ranges.py),
+   [`core/regret_decision_tree.py`](src/enesys/core/regret_decision_tree.py))
 
-4. **Cross-validation against an external assumption substrate.** The
-   `param_sets/` module hosts independent assumption sets from outside
-   institutions — currently the PyPSA-Technology-Data defaults (the
-   input data feeding PyPSA-DE / BMBF-Ariadne). The convergence test
-   [`tests/consistency/test_ariadne_convergence.py`](tests/consistency/test_ariadne_convergence.py)
-   asserts that the structural eckpunkte of the path ranking hold
-   under that substrate swap. See
-   [`docs/PARAM_SETS.md`](docs/PARAM_SETS.md) for the mechanism and
-   contribution guide for further sets.
+4. **Parameter-substrate robustness check.** Swap the entire enesys
+   assumption substrate for the PyPSA-Tech-Data substrate that feeds
+   PyPSA-DE / BMBF-Ariadne; structural path ordering survives. The
+   name is deliberately not "cross-validation" — that term has a
+   specific statistical meaning that does not apply here.
+   ([`tests/consistency/test_ariadne_convergence.py`](tests/consistency/test_ariadne_convergence.py),
+   [`docs/PARAM_SETS.md`](docs/PARAM_SETS.md))
+
+5. **Nuclear start-year robustness check — regret is not a timing
+   artifact.** `nuclear_start_year_regret_analysis` overrides the
+   camp-derived KKW start years (2036/2046/2050) with a uniform value
+   X across all camps. At default parameters,
+   `kkw_regret_crossover_year((2020, 2055))` returns `None` — KKW
+   max-regret stays ~3 ct/kWh above EE-GAS regardless of when nuclear
+   first delivers. The recommendation survives the counterfactual
+   where KKW arrives in 2028.
+   ([`core/regret_decision_tree.py`](src/enesys/core/regret_decision_tree.py))
 
 ## The six paths
 
@@ -145,40 +152,74 @@ Four properties — each verifiable in the code, not just claims.
 | **KKW-GAS** | Renewables + Nuclear (post-2042) + Bridge-Gas | Nuclear renaissance with realistic build-times |
 | **KKW-H2** | Renewables + Nuclear + H₂-Backup | Reveals structural independence of backup choice |
 
-Headline finding under default assumptions (30-year average 2026-2055,
-`neutral_default` camp; CO₂ on a **system boundary** — power-sector
-emissions plus external sector-coupling emissions from heating and
-mobility that remain fossil in WEITER-SO/BESTAND):
+Headline finding (30-year average 2026-2055, `neutral_default` camp;
+CO₂ on a **system boundary** — power-sector emissions plus external
+sector-coupling emissions from heating and mobility that remain fossil
+in WEITER-SO/BESTAND):
+
+**Deterministic baseline** — the six paths at their neutral mid-point
+assumptions:
 
 | Path | Cost (LCOE) | Cumulative CO₂ (system boundary) | vs WEITER-SO |
 |---|---|---|---|
-| **EE-GAS** | **16.79 ct/kWh** | 2,937 Mt | saves 1,495 Mt (−34 %) |
+| EE-GAS | 16.79 ct/kWh | 2,937 Mt | saves 1,495 Mt (−34 %) |
 | WEITER-SO | 16.97 ct/kWh | 4,432 Mt | (baseline) |
 | EE-H2 | 17.26 ct/kWh | **2,689 Mt** | saves 1,743 Mt (−39 %) |
 | BESTAND | 17.33 ct/kWh | 4,870 Mt | adds 438 Mt |
 | KKW-GAS | 17.57 ct/kWh | 3,312 Mt | saves 1,120 Mt (−25 %) |
 | KKW-H2 | 17.82 ct/kWh | 3,022 Mt | saves 1,410 Mt (−32 %) |
 
-**EE-GAS is the cost optimum in the neutral camp; EE-H2 has the lowest
-cumulative CO₂.** The gap from EE-GAS to WEITER-SO is just 0.18 ct/kWh
-— supporting the "humility thesis" that **political inaction is
-economically nearly as expensive as the most pragmatic active path**,
-only with higher emissions. A power-sector-only CO₂ view would
-understate WEITER-SO and BESTAND by roughly a factor of two — their
-fossil heating and mobility don't show up in the power sector but in
-`r.co2_external_mt_per_year`, which the system-boundary total
-aggregates. **BESTAND is the worst path on CO₂** (4,870 Mt — even
-higher than political inaction) because dampened sector-coupling
-carries fossil-heating and fossil-mobility emissions forward. KKW-paths
-also emit *more* system-boundary CO₂ than their EE counterparts within
-the 30-year window (KKW-GAS 3,312 vs EE-GAS 2,937 Mt) — bridge-phase
-construction emissions outweigh later operational gains.
-**Other camps yield other top paths** (see distinctive property 3
-above); the recommendation comes from min-max-regret across camps, not
-from this single table.
+**Reading this table requires care.** The cost spread across the six
+paths is 1.03 ct/kWh — *smaller* than the Monte-Carlo P5-P95 spread
+within any single path (1.7-3.6 ct/kWh across 2,000 runs sampling
+uniformly over the camp ranges). Reading off ranks 1-3 from the cost
+column is reading noise. The robust claims sit elsewhere.
+
+**Cost robustness — Monte-Carlo, n = 2,000 over camp ranges:**
+
+| Pair comparison | P(left cheaper than right) |
+|---|---|
+| EE-GAS vs KKW-GAS | **100 %** |
+| EE-GAS vs KKW-H2 | **100 %** |
+| EE-GAS vs EE-H2 | **97 %** |
+| EE-GAS vs BESTAND | 53 % (coin flip) |
+| EE-GAS vs WEITER-SO | 24 % (WEITER-SO cheaper in 76 % of runs) |
+
+What survives the noise:
+
+1. **Among the four active programmatic paths (EE-GAS, EE-H2, KKW-GAS,
+   KKW-H2), EE-GAS is the robust cost choice.** Every other active path
+   is more expensive in ≥ 97 % of runs; nuclear paths sit at the bottom
+   of the cost distribution with certainty.
+2. **The CO₂ separation is structural, not parameter-driven.** Active
+   paths emit ~1,500-2,200 Mt less cumulative CO₂ than WEITER-SO/BESTAND
+   over 30 years — the gap follows from fossil heating + mobility staying
+   in WEITER-SO/BESTAND vs. being electrified in the active paths, not
+   from cost assumptions. A power-sector-only CO₂ view would understate
+   WEITER-SO and BESTAND by roughly a factor of two (their external
+   emissions live in `r.co2_external_mt_per_year`, which the
+   system-boundary total aggregates). KKW paths also emit *more*
+   system-boundary CO₂ than their EE counterparts within the 30-year
+   window (KKW-GAS 3,312 vs EE-GAS 2,937 Mt) — bridge-phase fossil
+   coverage outweighs later operational gains.
+
+What does *not* survive the noise — and is therefore stated honestly
+as a tied cluster, not a ranking:
+
+- The cost ordering between WEITER-SO, EE-GAS, BESTAND and EE-H2 sits
+  inside Monte-Carlo overlap. The cost-only race between WEITER-SO and
+  EE-GAS is a 76/24 split, not a 0.18-ct/kWh "near tie" — that's the
+  "humility thesis" quantified sharply: **on cost alone, political
+  inaction is the most likely winner; the case against WEITER-SO is the
+  +1,495 Mt CO₂, not the price tag**.
+
+**Other camps yield other deterministic top paths** (see distinctive
+property 3 above); the recommendation comes from min-max-regret across
+camps, not from any single deterministic table.
 
 Numbers reproducible with `python -c "from enesys import compute_path; ..."`
-(see Quickstart below).
+and `python -c "from enesys import monte_carlo_all_paths; ..."` (see
+Quickstart below).
 
 ## Quickstart
 
@@ -195,7 +236,7 @@ Monte-Carlo — five minutes end-to-end.
 ```bash
 git clone https://github.com/berndhardung/enesys.git
 cd enesys
-pip install -e ".[charts]"
+pip install -e .
 ```
 
 **Easiest setup — VS Code + Docker (no Python on the host needed):** after `git clone` open the folder in VS Code (`code .`) and accept the "Reopen in Container" prompt. The included `.devcontainer/` provisions Python 3.12, uv, all dependencies and editor extensions; the venv is built during the container build so the environment is ready as soon as VS Code attaches.
@@ -208,6 +249,30 @@ make venv                                          # ~5 s, uses uv.lock
 ```
 
 **Or in GitHub Codespaces:** click *Code → Codespaces → Create codespace*. Same `.devcontainer/` setup, runs in the cloud.
+
+### Run the interactive Streamlit app
+
+The compare view (anchor camp ↔ variant camp, six core charts side by
+side, sliders for any of 19 model parameters) ships as a Streamlit
+app. The hosted demo lives at
+[enesys.streamlit.app](https://enesys.streamlit.app); to run locally:
+
+```bash
+pip install -e .   # streamlit + matplotlib + pandas + plotly all included
+streamlit run app/streamlit_app.py
+```
+
+Three pages reachable via the sidebar navigation:
+
+- **🏠 Overview** — the headline finding (cost and CO₂ vs BESTAND),
+  the structure of the six paths, the five camps explained.
+- **📊 Charts** — pick an **anchor camp** on the left and a **variant
+  camp** on the right; the six core charts render side by side.
+  Slider overrides snap the variant to **Individuell** with the
+  deviation shown in the caption above each chart. Deep-links: `?lang=de`/`en`,
+  `?anchor=…`, `?variant=…`, `?mobile=1` for the portrait layout.
+- **📚 Sources** — every default in the model is backed by a primary
+  citation; slider tooltips deep-link to the matching tag.
 
 ### Use the model programmatically
 
@@ -247,7 +312,7 @@ enesys/
 │
 ├── src/enesys/         Model library
 │   ├── core/                         Data structures, path model, sensitivity, WACC
-│   ├── extensions/                   Anhang-C, land use, consumer, winter stress
+│   ├── extensions/                   land use, consumer, winter stress, profile costs
 │   └── viz/                          Chart building blocks (matplotlib + plotly theme)
 │
 ├── tests/                            pytest suite
@@ -267,7 +332,7 @@ enesys/
 - [`docs/methodik/modell_architektur.md`](docs/methodik/modell_architektur.md) —
   high-level architecture overview
 - [`docs/methodik/`](docs/methodik/) — further methodology deep dives
-  (Anhang-C bottom-up cross-check, bridge phase parameters, English
+  (steady-state parameter consistency, bridge phase parameters, English
   methodology overview)
 
 ## Sources

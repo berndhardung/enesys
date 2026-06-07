@@ -94,7 +94,8 @@ PATH_MIXES = {
     # Importe (LNG-Mix), 0 % Kohle (KVBG), 0 % Atom, kleiner Restbackup.
     # Mengen-Bilanz:
     #   0.18 + 0.10 + 0.04 + 0.03 + 0.03 + 0.50 + 0.10 + 0.02 = 1.00
-    # Konsistent zu BestandParams (path_model.py) und AnhangC2055Params.
+    # Konsistent zu BestandParams (path_model.py) und zum Bottom-up-
+    # Steady-State-2055-Modell.
     "BESTAND": {
         "pv": 0.18,
         "wind_onshore": 0.10,

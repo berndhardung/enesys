@@ -1,121 +1,133 @@
-# Versionsverwaltung
+# Versioning
 
-Wie die Versionsnummer im Modell aufgebaut ist und wie sie zur Laufzeit
-abgefragt wird. Maintainer-Workflow (Release-Bump, Branch-Modell) liegt
-separat — siehe Hinweis am Ende dieses Dokuments.
+How the version number is structured in the model and how it is
+queried at runtime. The maintainer workflow (release bump, branch
+model) lives separately — see the note at the end.
 
-## Schema
+## Scheme
 
-`MAJOR.MINOR.PATCH` — Pre-1.0-Modus mit gelockertem Semver-Vertrag.
+`MAJOR.MINOR.PATCH` — pre-1.0 mode with a loosened SemVer contract.
 
-- **MAJOR** ist die Hauptlinie.
-- **MINOR darf in <1.0 breaking sein.** Bewusste Abweichung von Semver.
-  Begründung: ein MAJOR-Bump bei jeder methodischen Änderung würde zu
-  Versionsinflation führen, ohne dass die Versionsnummer zusätzliche
-  Information transportiert. Niemand außerhalb des Projekts hängt von
-  der API ab.
-- **PATCH** ist für reine Bugfixes in einer laufenden MINOR-Linie. Hier
-  gilt strikte Rückwärtskompatibilität — eine 0.1.2 muss als
-  Drop-in-Replacement für 0.1.1 dienen können.
+- **MAJOR** is the main line.
+- **MINOR may be breaking in <1.0.** Deliberate deviation from SemVer.
+  Reason: a MAJOR bump on every methodological change would inflate
+  the version number without carrying extra information. Nobody
+  outside the project depends on the API.
+- **PATCH** is for pure bug fixes within a running MINOR line. Strict
+  backward compatibility applies here — a 0.1.2 must serve as a
+  drop-in replacement for 0.1.1.
 
-## Aktueller Stand
+## Current state
 
-Der aktuelle Versionsstand wird durch die [`VERSION`](../VERSION)-Datei und
-[`CHANGELOG.md`](../CHANGELOG.md) bestimmt. Echte Releases werden zusätzlich
-mit annotierten Git-Tags `vX.Y.Z` markiert.
+The current version state is determined by the
+[`VERSION`](../VERSION) file and [`CHANGELOG.md`](../CHANGELOG.md).
+Real releases are additionally marked with annotated git tags
+`vX.Y.Z`.
 
-## Build-Zeit-Versionsstring
+## Build-time version string
 
-Die finale Versionsnummer wird automatisch aus `VERSION` plus Git-Status
-zusammengesetzt:
+The final version number is automatically assembled from `VERSION`
+plus git status:
 
-| Branch | Dirty? | Output von `get_version()` |
+| Branch | Dirty? | Output of `get_version()` |
 |---|---|---|
-| `stable/0.1` | nein | `0.1.0` |
-| `main` | nein | `0.1.0-gabc1234` |
-| beliebig | ja | `0.1.0-gabc1234-dirty` |
+| `stable/0.1` | no | `0.1.0` |
+| `main` | no | `0.1.0-gabc1234` |
+| any | yes | `0.1.0-gabc1234-dirty` |
 
-`dirty` bedeutet: Änderungen an tracked files, uncommitted oder staged.
-Untracked files (`__pycache__`, lokale Output-Verzeichnisse) zählen
-nicht.
+`dirty` means: changes to tracked files, uncommitted or staged.
+Untracked files (`__pycache__`, local output directories) do not
+count.
 
-Die saubere "0.1.0" ohne Suffix erscheint also nur, wenn der aktuelle
-Branch ein `stable/X.Y`-Branch ist UND der Working Tree clean ist.
-Sonst ist immer der Git-Hash dabei, sodass jedes Build eindeutig
-identifizierbar ist.
+So the clean `0.1.0` without suffix only appears when the current
+branch is a `stable/X.Y` branch AND the working tree is clean.
+Otherwise the git hash is always attached, so every build is uniquely
+identifiable.
 
-**Hinweis zur Release-Pinnung.** `stable/X.Y`-Branches sind eine
-Maintainer-Workflow-Konvention für parallele Wartungslinien (0.1.x,
-0.2.x, …) und tauchen in diesem Repo nicht auf. Wer einen
-reproduzierbaren Release-Stand braucht, checkt den entsprechenden Tag
-aus:
+**Note on release pinning.** `stable/X.Y` branches are a maintainer-
+workflow convention for parallel maintenance lines (0.1.x, 0.2.x, …)
+and do not appear in this repo. Anyone who needs a reproducible
+release state should check out the corresponding tag:
 
 ```bash
 git checkout v0.1.0
 ```
 
-In diesem Fall ist HEAD detached (kein Branch-Name), `get_version()`
-hängt also weiterhin Hash + Datum an. Die kanonische Version-Information
-ist dann der Tag selbst, nicht der `get_version()`-Output.
+In that case HEAD is detached (no branch name), so `get_version()`
+still appends hash + date. The canonical version information is then
+the tag itself, not the `get_version()` output.
 
-## Wo die Version sichtbar wird
+## Where the version is surfaced
 
-Aus dem Code:
+From code:
 
 ```python
 from enesys import get_version
-get_version()  # → "0.1.0" oder "0.1.0-gabc1234-dirty"
+get_version()  # → "0.1.0" or "0.1.0-gabc1234-dirty"
 ```
 
-Oder aus dem Terminal:
+Or from the terminal:
 
 ```bash
 python -m enesys
 ```
 
-## Was passiert ohne Git?
+## What happens without git?
 
-Wenn jemand das Repo ohne Git-Historie in der Hand hat (etwa als
-ZIP-Download oder als Wheel-Installation), liefert `get_version()`
-einfach den Inhalt der `VERSION`-Datei ohne Suffix. Dann ist die
-Versionsnummer "trustless" — niemand weiß, ob lokal noch dran
-rumgefummelt wurde.
+If someone has the repo without git history (e.g. as a ZIP download or
+a wheel install), `get_version()` simply returns the contents of the
+`VERSION` file without a suffix. The version number is then "trustless"
+— no one knows whether local changes were made.
 
-Das ist akzeptabel: in dieser Situation ist die Identifikation auch
-nicht zentral. Die `dirty`-Markierung dient primär dazu, im laufenden
-Entwicklungs-Workflow zu sehen "ich baue gerade mit lokalen Änderungen"
-— sobald jemand das Artefakt frisch deployed, ist es per Definition
-nicht dirty.
+That is acceptable: in that situation identification is not central
+either. The `dirty` marker exists primarily so that, during active
+development, one can see "I'm currently building with local changes" —
+as soon as the artifact is freshly deployed it is by definition not
+dirty.
 
 ## FAQ
 
-### Warum kein `setuptools-scm`?
-Erwogen, aber für ein Single-Repo-Projekt overkill. Die `VERSION`-Datei
-plus `version.py` kommen mit ~150 Zeilen Code aus, sind eigenständig
-(keine zusätzlichen Build-Dependencies) und tun genau das Richtige.
+### Why not `setuptools-scm`?
+Considered, but overkill for a single-repo project. The `VERSION` file
+plus `version.py` come to ~150 lines of code, are self-contained (no
+additional build dependencies), and do exactly the right thing.
 
-### Wie sehe ich die aktuelle Version aus dem Terminal?
+### How do I see the current version from the terminal?
 ```bash
 python -m enesys
 ```
 
-Oder programmatisch:
+Or programmatically:
 ```python
 from enesys import get_version
 print(get_version())
 ```
 
-### Was wenn `git` auf dem Build-Rechner fehlt?
-`get_version()` fängt das ab und liefert nur die Basis-Version aus der
-`VERSION`-Datei. Build geht trotzdem durch. Das ist der
-Container-Standardfall (z.B. Docker-Build).
+### What if `git` is missing on the build machine?
+`get_version()` catches that and returns only the base version from
+the `VERSION` file. The build still goes through. This is the
+standard container case (e.g. Docker build).
 
-### Wie verhindere ich versehentliches Inflationieren der Version?
-Die `VERSION`-Datei ist zentral und wird nur explizit gebumpt. Es gibt
-kein automatisches Bumping.
+### How do I prevent accidentally inflating the version?
+The `VERSION` file is central and is bumped only explicitly. There is
+no automatic bumping.
+
+### What about the version in `pyproject.toml`?
+`pyproject.toml` carries a static `version = "X.Y.Z"` field that must
+be bumped in lock-step with `VERSION` at release time. The static
+declaration exists because `uv lock` cannot represent a dynamic
+version in its lockfile (the resulting `[[package]] name = "enesys"`
+entry has no `version =` field, which downstream uv consumers — e.g.
+Streamlit Community Cloud's deploy installer — reject). Runtime
+version lookup (`get_version()` / `enesys.__version__`) continues to
+read the `VERSION` file directly via `version.py`, so it stays the
+source of truth for the build-time-stamped string with git hash and
+date. Release-time bump touches three places together:
+`pyproject.toml` (static), `VERSION` (file), and `CITATION.cff`
+(`version` + `date-released`).
 
 ---
 
-**Hinweis für Maintainer.** Der Release-Workflow (Stable-Branch
-anlegen, MINOR-/PATCH-Bump, Tag-Pflege) wird separat dokumentiert und
-ist nicht Teil dieses Public-Dokuments.
+**Note for maintainers.** The release workflow (creating a stable
+branch, MINOR/PATCH bump, tag maintenance) is documented separately
+and is not part of this public document.

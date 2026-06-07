@@ -30,7 +30,38 @@ from enesys.viz.theme import (
     PATH_OPEN_MARKERS,
 )
 
-Variant = Literal["embedded", "epub", "standalone", "web"]
+Variant = Literal["embedded", "epub", "standalone", "web", "mobile"]
+
+
+# Per-variant figsize overrides. Mobile is single-column oriented
+# (portrait-friendly) with chunkier fonts so axis labels stay legible
+# at ~375 px viewport width.
+#
+# Different default shapes map to different mobile shapes:
+# - Double-panel side-by-side (e.g. trajectory) -> short portrait
+# - Wide single-panel (build-time empirics) -> short portrait
+# - 2×3 grid (rampup/stress) -> 6×1 tall portrait, generous height per row
+MOBILE_FIGSIZE_DOUBLE = (8.0, 11.0)
+MOBILE_FIGSIZE_WIDE = (8.0, 6.0)
+MOBILE_FIGSIZE_GRID = (8.0, 22.0)
+
+
+def figsize_for_variant(variant: Variant, default: tuple[float, float]) -> tuple[float, float]:
+    """Return the figsize to use for ``variant``.
+
+    Falls back to ``default`` for every variant except ``mobile``. The
+    mobile overrides aim at portrait-aspect figures that render at full
+    width on a phone.
+    """
+    if variant != "mobile":
+        return default
+    width, height = default
+    if width >= 14 and height >= 8:  # 2x3 grid layouts
+        return MOBILE_FIGSIZE_GRID
+    if width >= 14:  # double-panel side-by-side
+        return MOBILE_FIGSIZE_DOUBLE
+    return MOBILE_FIGSIZE_WIDE
+
 
 # OSS-Repo-URL: zentrale Quellangabe für die im Public-Mirror reproduzierbaren
 # Charts. Wird im Footer aller viz/charts/-Bausteine gerendert.

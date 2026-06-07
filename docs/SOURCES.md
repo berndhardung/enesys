@@ -1,37 +1,42 @@
-# Quellen-Dokumentation der Eingangsparameter
+# Source documentation for input parameters
 
-Dieses Dokument belegt jeden Default-Parameter im Modell mit Quelle, Datum und
-Lager-spezifischer Bandbreite. Es ist die Grundlage für die Belegbarkeit jeder
-Default-Setzung im Modell.
+> **Language note.** Most primary sources for this German energy-policy
+> model are in German (BNetzA, BMWE, ISE, EWI, KENFO, KVBG, NWS …).
+> Source titles, citations, and verbatim excerpts are therefore kept
+> in the original language. Section labels and reading guide are in
+> English; per-parameter tables retain German column headers
+> (`Wert`, `Quelle`, `Begründung`, `Bandbreite`).
 
-> **Hinweis zur Code-Integration:** Die hier dokumentierten
-> Lager-Bandbreiten sind im Code als zentrale Datenstruktur
-> `CAMP_RANGES` aus `enesys` importierbar (siehe
-> `from enesys import CAMP_RANGES, tornado_path_analysis,
-> monte_carlo_all_paths`). Die Sensitivitäts-Funktionen lesen ihre
-> Bandbreiten daraus ab — statt ad-hoc-±25 %. Wer einen Lager-Wert für
-> unrealistisch hält, muss nur diese Tabelle ändern; alle Sensitivitäts-
-> analysen aktualisieren sich automatisch.
+This document grounds each default parameter in the model with a
+source, date, and camp-specific range. It is the foundation for the
+defensibility of every default choice in the model.
 
-> **Glaubwürdigkeit:** Die Modell-Aussagen stützen sich auf
-> Klasse-A/B-Quellen (Behörden, peer-reviewte Wissenschaft). Die
-> Tornado-kritischen Hebel sind in `docs/FORMULAS.md` mit ihrer
-> Sensitivität dokumentiert; die volle Quellen-Tabelle steht weiter
-> unten in diesem Dokument.
+> **Note on code integration:** the camp ranges documented here are
+> importable in code as the central data structure `CAMP_RANGES` from
+> `enesys` (see `from enesys import CAMP_RANGES,
+> tornado_path_analysis, monte_carlo_all_paths`). The sensitivity
+> functions read their ranges from there — instead of ad-hoc ±25 %.
+> Anyone who considers a camp value unrealistic only needs to edit
+> this table; all sensitivity analyses update automatically.
 
-## Lese-Anleitung
+> **Credibility:** the model statements rest on class-A/B sources
+> (authorities, peer-reviewed science). The tornado-critical levers
+> are documented in `docs/FORMULAS.md` with their sensitivity; the
+> full source table sits further down in this document.
 
-Jeder Parameter folgt diesem Schema:
+## Reading guide
+
+Each parameter follows this schema:
 
 ```
-PARAMETER (Code-Variable)
-├── Default (neutrale Mitte): WERT  [Quellen-Tag]
-├── EE-Lager-Annahme: WERT-RANGE   [Quellen-Tag, Begründung]
-├── Atom-Lager-Annahme: WERT-RANGE [Quellen-Tag, Begründung]
-└── Methodischer Streitpunkt: ...
+PARAMETER (code variable)
+├── Default (neutral middle): VALUE  [source tag]
+├── EE-camp assumption: VALUE-RANGE   [source tag, rationale]
+├── Atom-camp assumption: VALUE-RANGE [source tag, rationale]
+└── Methodological friction point: ...
 ```
 
-**Quellen-Tags** (verlinkt am Ende des Dokuments):
+**Source tags** (linked at the end of the document):
 - `ISE-2024` Fraunhofer ISE Stromgestehungskosten 2024
 - `BNEF-2025-LIB` BloombergNEF Lithium-Ion Battery Price Survey 2025 (Dez 2025)
 - `BNEF-2025-LCOE` BloombergNEF LCOE Report 2026 (Feb 2026)
@@ -69,7 +74,7 @@ PARAMETER (Code-Variable)
 
 ---
 
-## A · ERZEUGUNGSKOSTEN (LCOE)
+## A · GENERATION COSTS (LCOE)
 
 ### `pv_lcoe` — PV-Freiflächen-LCOE
 
@@ -247,7 +252,7 @@ für ein neues Speicher-Projekt sind.
 
 ---
 
-## C · WACC (Risikoprämien)
+## C · WACC (risk premia)
 
 ### `wacc_pv` / `wacc_wind` / `wacc_nuclear` / `wacc_battery`
 
@@ -306,7 +311,7 @@ verschiebt das nur die Risikoträger, nicht die Kosten.
 
 ---
 
-## D · SPEICHER
+## D · STORAGE
 
 ### `battery_lcos`
 
@@ -373,7 +378,7 @@ liegt deshalb im Bereich der Modellungenauigkeit.
 
 ---
 
-## F · ENDLAGERUNG
+## F · FINAL DISPOSAL
 
 ### `endlager_per_kwh`
 
@@ -408,7 +413,7 @@ Subvention.
 
 ---
 
-## G · NACHFRAGE-TREIBER
+## G · DEMAND DRIVERS
 
 ### `pkw_bestand_mio`
 
@@ -472,7 +477,7 @@ Online: https://www.bmwk.de/Redaktion/DE/Publikationen/Energie/fortschreibung-na
 
 ---
 
-## H · ZEITACHSE
+## H · TIMELINE
 
 ### KKW-Inbetriebnahme — `KKW_EPR_APPROVAL_YEAR` + sqrt-Streckung
 
@@ -550,7 +555,7 @@ https://www.marktstammdatenregister.de
 
 ---
 
-## I · NETZSTABILITÄT
+## I · GRID STABILITY
 
 ### `inertia_demand_gw_2030`
 
@@ -572,7 +577,7 @@ mit dem Inertia-Procurement begonnen.
 
 ---
 
-## J · WINTER-STRESS-TEST
+## J · WINTER STRESS TEST
 
 ### `duration_hours` — Dunkelflaute-Dauer
 
@@ -603,7 +608,7 @@ mit dem Inertia-Procurement begonnen.
 
 ---
 
-## K · BACKUP-DIMENSIONIERUNG
+## K · BACKUP SIZING
 
 ### Backup-Anteil pro Pfad
 
@@ -634,7 +639,7 @@ Sektorkopplung (Wärmepumpen, E-Auto-Laden) wächst.
 
 ---
 
-## L · NETZ
+## L · GRID
 
 ### `grid_surcharge` — Netzschicht (Übertragung + Verteilung)
 
@@ -656,7 +661,7 @@ Annahmen als auch konservative Trassenkosten-Annahmen ab.
 
 ---
 
-## Quellenverzeichnis (vollständig)
+## Source register (complete)
 
 | Tag | Vollzitat | URL/DOI | Datum |
 |---|---|---|---|
@@ -695,7 +700,7 @@ Annahmen als auch konservative Trassenkosten-Annahmen ab.
 | `BNETZA-MASTR-2024` | Bundesnetzagentur: Marktstammdatenregister, PV-Zubau-Statistiken 2024 | https://www.marktstammdatenregister.de | 2024-2025 |
 | `BMWK-H2-STRATEGIE-2023` | BMWK: Fortschreibung der Nationalen Wasserstoffstrategie + Statusbericht 2024 | https://www.bmwk.de/Redaktion/DE/Publikationen/Energie/fortschreibung-nationale-wasserstoffstrategie.html | Juli 2023 / Dez. 2024 |
 
-### Klima- und Klimakosten-Studien
+### Climate and climate-cost studies
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -704,7 +709,7 @@ Annahmen als auch konservative Trassenkosten-Annahmen ab.
 | `BDI-PROGNOS-2021` | BDI/Prognos: Klimapfade 2.0 — Wege zur Klimaneutralität 2045 | https://bdi.eu/publikation/news/klimapfade-2-0/ | Okt. 2021 |
 | `RAHMSTORF-PIK` | Stefan Rahmstorf, Potsdam-Institut für Klimafolgenforschung | https://www.pik-potsdam.de/members/stefan | laufend |
 
-### Frankreich EPR-Programm und Bauzeit-Belege
+### France EPR program and build-time evidence
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -713,7 +718,7 @@ Annahmen als auch konservative Trassenkosten-Annahmen ab.
 | `SENAT-FR-EPR2` | Senat (FR): Gesetz für 14 EPR2-Reaktoren bis 2050 | https://www.senat.fr | Juli 2025 |
 | `IWR-FR-2025` | IWR: Frankreichs Atomoffensive — erste Inbetriebnahme nicht vor 2038 | https://www.iwr.de | März 2025 |
 
-### Uran und Lieferketten-Resilienz
+### Uranium and supply-chain resilience
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -721,10 +726,10 @@ Annahmen als auch konservative Trassenkosten-Annahmen ab.
 | `URANATLAS-2026` | Uranatlas 2026: NFFF, BUND, Rosa-Luxemburg-Stiftung u.a. | https://www.rosalux.de/dossiers/uranatlas | März 2026 |
 | `WNA-2024` | World Nuclear Association: Uranium Production Figures | https://world-nuclear.org | 2024 |
 | `BTAG-WD-URAN-2024` | Wissenschaftlicher Dienst Bundestag: Globaler Markt für Uran | https://www.bundestag.de/wissenschaftliche-dienste | Oktober 2024 |
-| `OECD-NEA-2019` | OECD-NEA: *The Costs of Decarbonisation: System Costs with High Shares of Nuclear and Renewables*, NEA No. 7299, Paris 2019. Methoden-Referenz für System-Kosten in Mischsystemen mit hoher VRE-Penetration; verwendet in ANHANG_C als Beleg für die Aussage, dass dispatchable Kraftwerke unter ihre technischen Maxima fahren, sobald VRE-Anteile hoch sind. Class A — peer-reviewt, OECD-Publikation. | https://www.oecd-nea.org/jcms/pl_15000/the-costs-of-decarbonisation-system-costs-with-high-shares-of-nuclear-and-renewables | 2019 |
+| `OECD-NEA-2019` | OECD-NEA: *The Costs of Decarbonisation: System Costs with High Shares of Nuclear and Renewables*, NEA No. 7299, Paris 2019. Methoden-Referenz für System-Kosten in Mischsystemen mit hoher VRE-Penetration; verwendet als Beleg für die Aussage, dass dispatchable Kraftwerke unter ihre technischen Maxima fahren, sobald VRE-Anteile hoch sind. Class A — peer-reviewt, OECD-Publikation. | https://www.oecd-nea.org/jcms/pl_15000/the-costs-of-decarbonisation-system-costs-with-high-shares-of-nuclear-and-renewables | 2019 |
 | `OECD-NEA-2024` | OECD-NEA / IAEA: Uranium 2024 — Resources, Production and Demand | https://www.oecd-nea.org | 2025 |
 
-### Industrie-Kommunikations-Belege
+### Industry-communication evidence
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -736,7 +741,7 @@ Annahmen als auch konservative Trassenkosten-Annahmen ab.
 | `BTAG-LOBBYREGISTER` | Bundestag Lobbyregister | https://www.lobbyregister.bundestag.de | laufend |
 | `KENFO-INVESTMENTS` | KENFO: Anlagestrategie und Portfolio-Berichte | https://www.kenfo.de | laufend |
 
-### Politik und Gesetzgebung
+### Policy and legislation
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -747,7 +752,7 @@ Annahmen als auch konservative Trassenkosten-Annahmen ab.
 | `GEG-2024` | Gebäudeenergiegesetz | https://www.gesetze-im-internet.de/geg/ | 2024 |
 | `EU-TAXONOMIE-2022` | EU-Taxonomieverordnung — Ergänzungsverordnung Atomkraft/Gas | https://eur-lex.europa.eu | März 2022 |
 
-### Ergänzende Quellen-Referenzen
+### Supplementary source references
 
 Quellen, die ergänzend zur Triangulation geführt werden. Wo sie
 im Modell aktiv konsumiert werden, ist die Stelle in
@@ -772,7 +777,7 @@ im Modell aktiv konsumiert werden, ist die Stelle in
 | `EDF-EPR-Specifications` | EDF / Framatome: EPR2-Reaktor-Spezifikationen — Netto-Leistung 1.500-1.670 MW pro Block, Site-Größe ~30 ha pro Doppelblock. Class A. | https://www.edf.fr | laufend |
 | `MODEL-DEFAULT` | Modell-Default: Verweis auf Konstanten und Trajektorien im Modell-Kern (`core/path_model.py`, `core/path_inputs.py`). Kein externer Beleg, sondern interner Kreuzverweis auf eine an anderer Stelle dokumentierte Modell-Setzung. | (intern) | laufend |
 
-### Lager-Bücher und Positions-Belege
+### Camp books and position evidence
 
 | Tag | Vollbeleg | URL/ISBN | Datum |
 |---|---|---|---|
@@ -783,7 +788,7 @@ im Modell aktiv konsumiert werden, ist die Stelle in
 | `GATES-2021` | Bill Gates: How to Avoid a Climate Disaster, Penguin Random House | ISBN 978-0-385-54613-3 | 2021 |
 | `LEVESON-2011` | Nancy Leveson: Engineering a Safer World, MIT Press | ISBN 978-0-262-01662-9 | 2011 |
 
-### Fusion, KI, Disruption
+### Fusion, AI, disruption
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -793,7 +798,7 @@ im Modell aktiv konsumiert werden, ist die Stelle in
 | `HELION-MS-2023` | Microsoft-Helion Power Purchase Agreement | https://www.helionenergy.com | Mai 2023 |
 | `IEA-ELECTRICITY-2024` | IEA: Electricity 2024 — Datacenter and AI demand projections | https://www.iea.org/reports/electricity-2024 | 2024 |
 
-### Solar-Industrie historisch (Resilienz-Argument)
+### Solar industry, historical (resilience argument)
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -802,7 +807,7 @@ im Modell aktiv konsumiert werden, ist die Stelle in
 | `MEYERBURGER-2021` | Meyer Burger: Wiederaufnahme PV-Produktion in Thalheim | https://www.meyerburger.com | 2021 |
 | `SMA-2024` | SMA Solar Technology: Geschäftsbericht 2024 | https://www.sma.de | 2024 |
 
-### Strompreise und Netzentgelte
+### Electricity prices and grid charges
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -822,7 +827,7 @@ im Modell aktiv konsumiert werden, ist die Stelle in
 | `BNETZA-KANU-2024` | Bundesnetzagentur: KANU 2.0 — Kapitalkosten-Anpassungs-Festlegung Gasnetze, vorgezogene Abschreibungen mit Blick auf 2045 | https://www.bundesnetzagentur.de | 2024 |
 | `BNETZA-EE-NETZKOSTEN-2025` | Bundesnetzagentur Festlegung BK8-24-001-A: bundesweite Verteilung der Mehrkosten aus EE-Integration ab 2025 | https://www.bundesnetzagentur.de | 2024-2025 |
 
-### Wasserstoff-Hochlauf
+### Hydrogen ramp-up
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -835,7 +840,7 @@ im Modell aktiv konsumiert werden, ist die Stelle in
 | `BDEW-H2-2026-ANDREAE` | Kerstin Andreae, Vorsitzende BDEW: Kritik an Kürzungen der Wasserstoffförderung im Haushaltsentwurf 2026 als »völlig falsches Signal« | BDEW-Pressemeldung | Januar 2026 |
 | `THYSSENKRUPP-H2-DUISBURG` | Thyssenkrupp Steel: Direktreduktionsanlage Duisburg, Vollbetrieb-Wasserstoffbedarf 143.000 t/Jahr (~390 t/Tag) | https://www.thyssenkrupp-steel.com | 2024-2026 |
 
-### Dunkelflaute und Versorgungssicherheit
+### Dunkelflaute and security of supply
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -843,7 +848,7 @@ im Modell aktiv konsumiert werden, ist die Stelle in
 | `ENTSO-E` | ENTSO-E: Transparency Platform (Strom-Echtzeit-Daten) | https://transparency.entsoe.eu | laufend |
 | `DWD-DUNKELFLAUTEN` | DWD: Witterungsanalysen 2024 — kalte Dunkelflauten | https://www.dwd.de | 2024-2025 |
 
-### NIMBY-Konflikte und Reformhebel
+### NIMBY conflicts and reform levers
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -865,7 +870,7 @@ im Modell aktiv konsumiert werden, ist die Stelle in
 | `WPG-2023` | Wärmeplanungsgesetz vom 20.12.2023 (Pflicht zur kommunalen Wärmeplanung bis 2026/2028) | https://www.gesetze-im-internet.de/wpg/ | Januar 2024 |
 | `WIND-LAND-2022` | Wind-an-Land-Gesetz vom 20.7.2022 (BGBl. I S. 1353), 2-Prozent-Flächenziel | https://www.gesetze-im-internet.de | Juli 2022 |
 
-### EU-Politik
+### EU policy
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -875,20 +880,20 @@ im Modell aktiv konsumiert werden, ist die Stelle in
 | `EU-COMM-FITFOR55` | EU-Kommission: Fit for 55 Package, Strategiebericht | https://commission.europa.eu/strategy-and-policy/priorities-2019-2024/european-green-deal/delivering-european-green-deal_en | 2021-2024 |
 | `KVBG` | Kohleverstromungsbeendigungsgesetz vom 8. August 2020 (BGBl. I S. 1818); § 2 Abs. 2 legt Kohleausstieg spätestens 31.12.2038 fest | https://www.gesetze-im-internet.de/kvbg/ | August 2020 |
 
-### CO₂-Kosten und Klimakosten-Studien
+### CO₂ costs and climate-cost studies
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
 | `AGORA-MEHRKOSTEN-2021` | Agora Energiewende: Klimaneutrales DE 2045 — 940 Mrd. Euro Mehrkosten als Vergleichs-Größe zur Investitions-Bandbreite | https://www.agora-energiewende.de/veroeffentlichungen/klimaneutrales-deutschland-2045 | 2021 |
 | `IPCC-AR6-WG3` | IPCC AR6 Working Group III: Mitigation of Climate Change | https://www.ipcc.ch/report/ar6/wg3/ | 2022 |
 
-### Klimadynamik und Großwetterlagen
+### Climate dynamics and large-scale weather patterns
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
 | `HEREON-2024` | Helmholtz-Zentrum Geesthacht (Hereon) und Max-Planck-Institut für Meteorologie: *Klimawandel und Großwetterlagen über Mitteleuropa — Trends 1980-2023 und Projektionen 2050*. Tendenz: leichte Zunahme winterlicher Hochdrucklagen über Mitteleuropa (+5-10 % Häufigkeit) bei gleichzeitiger Verlängerung einzelner Episoden um 10-20 %. Verwendet zur Begründung der Stresstest-Klima-Robustheit (Tiefdruckpause-Annahme). | https://www.hereon.de | 2024 |
 
-### Lieferketten und Industrie-Kapazität
+### Supply chains and industrial capacity
 
 | Tag | Vollbeleg | URL | Datum |
 |---|---|---|---|
@@ -898,7 +903,7 @@ im Modell aktiv konsumiert werden, ist die Stelle in
 | `BATTERY-CHARTS-RWTH` | RWTH Aachen ISEA / PGS, Figgener et al.: *Battery Charts* — monatliche Auswertung des deutschen Batteriespeicher-Bestands aus dem Marktstammdatenregister der Bundesnetzagentur, gegliedert nach Heim- (≤30 kWh), Gewerbe- (30-1.000 kWh) und Großspeichern. Verwendet zur Validierung der Speicher-Bestandsdaten 2024-2026 und als empirischer Anker für die im Modell unterstellte Lernkurve. Class A — primäre öffentliche Marktbeobachtung mit institutionellem Backing (RWTH Aachen, ISEA). | https://battery-charts.de | 2022-laufend |
 | `FIGGENER-2022` | Figgener, J. et al.: *The development of battery storage systems in Germany — A market review*, RWTH Aachen ISEA, arXiv:2203.06762 (Update 2023). Peer-reviewte Methoden-Referenz für die deutsche Batteriespeicher-Marktentwicklung 2013-2023. Quelle für Lernkurven-Annahmen Lithium-Ionen und für die Mix-Annahme Heim-/Gewerbe-/Großspeicher im Modell. Class A — peer-reviewed, akademisch. | https://arxiv.org/abs/2203.06762 | 2022-2023 |
 
-### BESTAND-Pfad (Bestands-Lager-Pure-Play)
+### BESTAND path (existing-fleet-camp pure play)
 
 Quellen für den BESTAND-Pfad (aktive fossile Kontinuität) und den
 Versorgungs-Schwelle-Lager-Parameter.
@@ -915,10 +920,10 @@ Versorgungs-Schwelle-Lager-Parameter.
 | `AGORA-DEMAND-FLEX-2024` | Agora Energiewende: *Demand-Side-Flexibilität im klimaneutralen Stromsystem*, 2024. Qualitative Bandbreite für DSM-Grenznutzen in volatilen EE-Systemen (~0,3-0,6 ct/kWh Einsparung über System-Mittel). Belegt die DSM-Asymmetrie EE-vs-KKW-Pfade (höherer Grenznutzen bei höherer Preisvolatilität). Class B — Agora-Branchen-Analyse, qualitativ. | https://www.agora-energiewende.de | 2024 |
 | `ARIADNE-FLEX-2024` | PIK / Ariadne-Kopernikus-Projekt: *Flexibilität im deutschen Energiesystem bis 2045*, Szenarienreport 2024. Qualitative Stützung der EE-DSM-Asymmetrie (Lastflexibilität in volatilen Systemen wertvoller) und der Misch-Pfad-Werte. Class A — Projekt-Verbund mit BMWK-Förderung. | https://ariadneprojekt.de | 2024 |
 | `IFW-REAKTIV-2025` | IfW Kiel: *Kurzanalyse zur ETS-Reform unter passiver Klimapolitik*, 2025. Belegt die WEITER-SO-Position »passive Trägheit akzeptiert EU-ETS-Korridor-Unterkante«; Grundlage für `co2_price_eur_t.weiterso_optimistic = 80` (symmetrisch zu BESTAND). Class B — Wirtschaftsforschungs-Institut, Politik-Analyse. | https://www.ifw-kiel.de | 2025 |
-| `NEA-PROJECTED-COSTS-2020` | OECD-NEA / IEA: *Projected Costs of Generating Electricity*, 2020-Ausgabe. Liefert den 0,1-2,4 ct/kWh-Korridor für Nuclear-Liability-Externalisierung; verwendet als Cross-Validation für die HPC-CfD-Decommissioning- + Endlager-Beitrags-Anker im Modell. Class A — peer-reviewt, OECD/IEA-Publikation. | https://www.oecd-nea.org/jcms/pl_15725/projected-costs-of-generating-electricity-2020-edition | 2020 |
+| `NEA-PROJECTED-COSTS-2020` | OECD-NEA / IEA: *Projected Costs of Generating Electricity*, 2020-Ausgabe. Liefert den 0,1-2,4 ct/kWh-Korridor für Nuclear-Liability-Externalisierung; verwendet als Robustheits-Cross-Check für die HPC-CfD-Decommissioning- + Endlager-Beitrags-Anker im Modell. Class A — peer-reviewt, OECD/IEA-Publikation. | https://www.oecd-nea.org/jcms/pl_15725/projected-costs-of-generating-electricity-2020-edition | 2020 |
 | `EDF-HPC-CFD` | Hinkley Point C Contract for Difference (UK ONR / HM Treasury Government Support Package, 2016) plus *Funded Decommissioning Programme* + *Waste Transfer Price* Vertragsdokumente. Belegt die Mid-Range-Anker für KKW-Neubau-Rückstellungen (Decommissioning-Fund £2-3/MWh + Waste-Transfer £1-2/MWh) — vertraglich fixierte Werte als empirischer Anker statt theoretischer Schätzungen. Class A — öffentlicher CfD-Vertrag. | https://assets.publishing.service.gov.uk (HPC Funded Decommissioning Programme) | 2016 |
 
-## Methodische Anmerkungen
+## Methodological notes
 
 **Erstens — die Lager-Spreizung ist real, aber begrenzt.**
 Die Bandbreiten zwischen EE-Lager und Atom-Lager sind selten Faktor 2 oder mehr.

@@ -38,10 +38,13 @@ from enesys.viz.charts._helpers import (
     add_oss_footer,
     apply_path_style,
     dpi_for_variant,
+    figsize_for_variant,
 )
+from enesys.viz.charts.labels import label as _label
 from enesys.viz.matplotlib_style import (
     PRINT_FONT_SIZE_ANNOT,
     STD_FIGSIZE_DOUBLE,
+    apply_mobile_style,
     apply_print_style,
 )
 from enesys.viz.theme import PATH_LABELS
@@ -50,7 +53,7 @@ if TYPE_CHECKING:
     from enesys.viz.brand import BrandConfig
 
 
-# Path order in the legend: EE first, then KKW, then reductio paths
+# Path order in the legend: EE first, then KKW, then status-quo paths
 # (BESTAND, WEITER-SO).
 PATH_ORDER: tuple[str, ...] = ("ee_gas", "ee_h2", "kkw_gas", "kkw_h2", "bestand", "weiterso")
 
@@ -79,6 +82,7 @@ def compute_trajectory_data(
     param_set: str | None = None,
     path_ids: tuple[str, ...] = PATH_ORDER,
     rolling_window: int = DEFAULT_ROLLING_WINDOW,
+    param_overrides: dict[str, float] | None = None,
 ) -> TrajectoryData:
     """Pre-compute rolling-LCOE trajectories for the chart.
 
@@ -99,7 +103,14 @@ def compute_trajectory_data(
         raise ValueError("years_range must be non-empty")
     extended_years = list(range(years[0], years[-1] + rolling_window))
     raw = {
-        pid: compute_path(pid, extended_years, camp=camp, param_set=param_set) for pid in path_ids
+        pid: compute_path(
+            pid,
+            extended_years,
+            camp=camp,
+            param_set=param_set,
+            param_overrides=param_overrides,
+        )
+        for pid in path_ids
     }
     all_lcoe = {pid: [r.lcoe_ct_kwh for r in raw[pid]] for pid in path_ids}
     rolling = {
@@ -119,22 +130,25 @@ def compute_trajectory_data(
 
 def render_lcoe_trajectory(
     data: TrajectoryData,
-    out_path: Path | str,
+    out_path: Path | str | None = None,
     *,
     variant: Variant = "embedded",
     title: str | None = None,
     subtitle: str | None = None,
     brand: BrandConfig | None = None,
     inline_labels: bool = True,
-) -> None:
+    return_fig: bool = False,
+    lang: str = "de",
+) -> plt.Figure | None:
     """Render the rolling-LCOE trajectory chart (2-panel layout).
 
     Parameters
     ----------
     data : TrajectoryData
         From :func:`compute_trajectory_data`.
-    out_path : Path | str
+    out_path : Path | str | None
         Output path. ``.svg`` for ``variant="web"``, ``.png`` otherwise.
+        May be ``None`` when ``return_fig=True``.
     variant : Variant
         Render preset.
     title, subtitle : optional
@@ -144,14 +158,24 @@ def render_lcoe_trajectory(
     inline_labels : bool
         When True, label each path at its rightmost endpoint instead of
         drawing a legend.
+    return_fig : bool
+        When True, return the matplotlib ``Figure`` instead of writing
+        to disk and closing it. Used by Streamlit to embed via
+        ``st.pyplot``.
     """
-    apply_print_style()
+    apply_mobile_style() if variant == "mobile" else apply_print_style()
 
-    fig, (ax_main, ax_spread) = plt.subplots(1, 2, figsize=STD_FIGSIZE_DOUBLE)
+    figsize = figsize_for_variant(variant, STD_FIGSIZE_DOUBLE)
+    if variant == "mobile":
+        fig, (ax_main, ax_spread) = plt.subplots(2, 1, figsize=figsize)
+    else:
+        fig, (ax_main, ax_spread) = plt.subplots(1, 2, figsize=figsize)
 
     start_year = data.years[0]
     end_year = data.years[-1]
-    window_label = f"{data.rolling_window}-year rolling LCOE"
+    window_label = _label("trajectory.window_label", lang, n=data.rolling_window)
+    ylabel_unit = _label("trajectory.ylabel_unit", lang)
+    xlabel = _label("trajectory.xlabel", lang)
 
     # === Panel 1: Rolling-LCOE per start year ===
     for path_id in PATH_ORDER:
@@ -172,13 +196,13 @@ def render_lcoe_trajectory(
                 dx=0.4,
             )
 
-    ax_main.set_ylabel(f"{window_label} (ct/kWh)", fontsize=PRINT_FONT_SIZE_ANNOT)
-    ax_main.set_xlabel("Investment start year", fontsize=PRINT_FONT_SIZE_ANNOT)
+    ax_main.set_ylabel(f"{window_label} {ylabel_unit}", fontsize=PRINT_FONT_SIZE_ANNOT)
+    ax_main.set_xlabel(xlabel, fontsize=PRINT_FONT_SIZE_ANNOT)
     ax_main.set_xlim(data.years[0], data.years[-1] + (3.5 if inline_labels else 0))
     ax_main.grid(True, linestyle=":", alpha=0.35)
     if variant != "embedded":
         ax_main.set_title(
-            f"Lifecycle LCOE per investment start year ({start_year}–{end_year})",
+            _label("trajectory.main_title", lang, start=start_year, end=end_year),
             fontsize=PRINT_FONT_SIZE_ANNOT,
         )
 
@@ -189,12 +213,12 @@ def render_lcoe_trajectory(
         spread.append(max(vals) - min(vals))
     ax_spread.plot(data.years, spread, color="#2A2A2A", linewidth=2.0)
     ax_spread.fill_between(data.years, 0, spread, color="#2A2A2A", alpha=0.12)
-    ax_spread.set_ylabel("Path spread max − min (ct/kWh)", fontsize=PRINT_FONT_SIZE_ANNOT)
-    ax_spread.set_xlabel("Investment start year", fontsize=PRINT_FONT_SIZE_ANNOT)
+    ax_spread.set_ylabel(_label("trajectory.spread_ylabel", lang), fontsize=PRINT_FONT_SIZE_ANNOT)
+    ax_spread.set_xlabel(xlabel, fontsize=PRINT_FONT_SIZE_ANNOT)
     ax_spread.set_xlim(data.years[0], data.years[-1])
     ax_spread.grid(True, linestyle=":", alpha=0.35)
     if variant != "embedded":
-        ax_spread.set_title("Path spread", fontsize=PRINT_FONT_SIZE_ANNOT)
+        ax_spread.set_title(_label("trajectory.spread_title", lang), fontsize=PRINT_FONT_SIZE_ANNOT)
 
     # === Title block (standalone only) ===
     if variant == "standalone" and title:
@@ -219,6 +243,11 @@ def render_lcoe_trajectory(
     plt.subplots_adjust(bottom=0.14)
     add_oss_footer(fig)
 
+    if return_fig:
+        return fig
+
+    if out_path is None:
+        raise ValueError("out_path must be set when return_fig=False")
     out_path = Path(out_path)
     dpi = dpi_for_variant(variant)
     if variant == "web":
@@ -230,3 +259,4 @@ def render_lcoe_trajectory(
             out_path = out_path.with_suffix(".png")
         fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
+    return None

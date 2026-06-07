@@ -421,7 +421,7 @@ class TimePathParams:
         Bauzeit gestreckt auf 12/sqrt(0,40) = 19 J.
         """
         # Clamp gegen ZeroDivisionError bei programmatischen Aufrufern, die
-        # nuclear_realization_rate=0.0 setzen (UI clamped via V3_SLIDER_SPEC).
+        # nuclear_realization_rate=0.0 setzen (UI clamped via SLIDER_SPEC).
         return self.nuclear_buildout_years / math.sqrt(max(1e-9, self.nuclear_realization_rate))
 
     def _nuclear_effective_first_unit_year(self) -> int:
@@ -924,8 +924,8 @@ class ForwardCostParams:
     nuclear_waste_transfer_eur_mwh: float = 1.5   # [SRC: EDF-HPC-CfD Waste Transfer Price £1-2/MWh; Mid-Range-Anker]
 
     # Historische Vorbelastungen (DOKU-ONLY: NICHT Teil der LCOE-Rechnung)
-    # Werte werden für Buch-Anhang / Anker-Tabellen aufgeführt, fließen
-    # aber nicht in compute_path ein — forward-LCOE ist per Definition
+    # Werte werden als Anker-/Display-Tabellen ausgewiesen, fließen aber
+    # nicht in compute_path ein — forward-LCOE ist per Definition
     # forward-only, sunk costs gehören nicht in die Pfad-Vergleichs-Arithmetik.
     sunk_nuclear_decommissioning_bn: float = 5.7  # [DOKU-ONLY: BMUV-Rückbau-Berichte 2024, offene Verbindlichkeiten jenseits des KENFO-Fonds]
     sunk_repository_fund_bn: float = 24.0  # [DOKU-ONLY: KENFO-2024, 24,1 Mrd. eingezahlt 2017]
@@ -935,7 +935,7 @@ class ForwardCostParams:
     # Die hauptsächliche fossile Externalisierung läuft schon über CO₂-
     # Pönale (co2_price_eur_t × fuel-Emissionsfaktor). Diese Felder
     # dokumentieren zusätzliche Stranded-Asset-Risiken für Reviewer-
-    # Symmetrie; methodisch heikel (Sensi-Welle nach V1.0).
+    # Symmetrie; methodisch heikel und daher nicht im Forward-LCOE aktiv.
     fossile_pipeline_stranded_bn: float = 40.0  # [DOKU-ONLY: Gas-Pipeline-Rückbau + LNG-Terminal-Lock-in, Reviewer-Schätz-Korridor 30-50 Mrd]
     fossile_coal_legacy_bn: float = 30.0  # [DOKU-ONLY: Braunkohle-Tagebau-Folgekosten, Reviewer-Schätz-Korridor 25-40 Mrd]
 
@@ -1297,10 +1297,11 @@ KKW_TOTAL_BACKUP_SHARE = 0.35  # nuc_share + bridge_gas_share, konstante Summe  
 #
 # Konsistenz LCOE ↔ Plot:
 #   Das LCOE-Modell rechnet weiterhin Steady-State (mit KKW-Trajektorie als
-#   Ausnahme). Plot-Trajektorie ist Visualisierungs-Layer obendrauf — Anhang-A
-#   trennt »Snapshot 2055« (Plot) und »Steady-State 2055-2085« (LCOE) bereits
-#   methodisch. Eine Vollintegration (LCOE rechnet pro Jahr mit Mix-Trajektorie)
-#   ist als künftige Erweiterung vorgesehen.
+#   Ausnahme). Plot-Trajektorie ist Visualisierungs-Layer obendrauf — die
+#   Trennung »Snapshot 2055« (Plot) vs. »Steady-State 2055-2085« (LCOE) ist
+#   methodisch gesetzt. Eine Vollintegration (LCOE pro Jahr mit
+#   Mix-Trajektorie) bleibt offen — Snapshot/Steady-State-Trennung ist die
+#   getroffene Designentscheidung.
 
 MIX_LAYERS: tuple[str, ...] = (
     "pv", "wind_on", "wind_off", "biomasse", "hydro",
@@ -1508,8 +1509,8 @@ für PV-Freifläche nach Lernkurven-Modell der Studie.
 bei Freiflächenanlagen« in 2045; CAPEX-Untergrenze »unter 460 EUR/kW«]"""
 
 PV_LERNKURVE_BNEF_NZS_MEDIAN: dict[str, float] = {"pv_capex_eur_kw_endjahr": 350.0}
-"""PV-CAPEX 2050 = 350 €/kW (LCOE ~3,07 ct). BNEF-Net-Zero-Median.
-Identisch zum Anhang-C-Default (= aggressives Lernkurven-Szenario).
+"""PV-CAPEX 2050 = 350 €/kW (LCOE ~3,07 ct). BNEF-Net-Zero-Median —
+aggressives Lernkurven-Szenario.
 [SRC: BNEF-NEO-2024 Net-Zero-Scenario, Bandbreite 200-450 €/kW, Median 350]"""
 
 PV_LERNKURVE_AGGRESSIV: dict[str, float] = {"pv_capex_eur_kw_endjahr": 200.0}

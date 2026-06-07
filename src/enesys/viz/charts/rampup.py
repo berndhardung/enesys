@@ -29,17 +29,24 @@ import numpy as np
 from matplotlib.axes import Axes
 
 from enesys.core.fuel import split_gas_h2ready_by_fuel
-from enesys.viz.charts._helpers import Variant, add_oss_footer, dpi_for_variant
+from enesys.viz.charts._helpers import (
+    Variant,
+    add_oss_footer,
+    dpi_for_variant,
+    figsize_for_variant,
+)
+from enesys.viz.charts.labels import label as _label
 from enesys.viz.matplotlib_style import (
     PRINT_FONT_SIZE_ANNOT,
     PRINT_FONT_SIZE_LEGEND,
+    apply_mobile_style,
     apply_print_style,
 )
 from enesys.viz.theme import (
     MENGENBILANZ_SCHICHT_COLORS,
-    MENGENBILANZ_SCHICHT_LABELS,
     PATH_COLORS,
     PATH_LABELS,
+    mengenbilanz_label,
 )
 
 if TYPE_CHECKING:
@@ -163,6 +170,7 @@ def compute_mix_rampup_data(
     camp: str = "neutral_default",
     param_set: str | None = None,
     years: tuple[int, ...] = STUETZJAHRE,
+    param_overrides: dict[str, float] | None = None,
 ) -> MixRampupData:
     """Sammelt die Mix-Schichten pro Pfad und Stützjahr aus ``compute_path``.
 
@@ -175,7 +183,13 @@ def compute_mix_rampup_data(
     demand_per_path: dict[str, list[float]] = {}
     for row in GRID_ORDER:
         for path_id in row:
-            results = compute_path(path_id, year_list, camp=camp, param_set=param_set)
+            results = compute_path(
+                path_id,
+                year_list,
+                camp=camp,
+                param_set=param_set,
+                param_overrides=param_overrides,
+            )
             layers: dict[str, list[float]] = {s: [] for s in LAYER_ORDER}
             demand: list[float] = []
             for r in results:
@@ -200,6 +214,7 @@ def _plot_path_subplot(
     path_id: str,
     *,
     bar_width: float = 1.5,
+    lang: str = "de",
 ) -> None:
     """Zeichnet einen Pfad in eine Subplot-Achse (Stack + Bedarfslinie + Titel).
 
@@ -220,7 +235,7 @@ def _plot_path_subplot(
             bottom=bottom,
             width=bar_width,
             color=MENGENBILANZ_SCHICHT_COLORS[s],
-            label=MENGENBILANZ_SCHICHT_LABELS[s],
+            label=mengenbilanz_label(s, lang),
             linewidth=0,
         )
         bottom += values
@@ -239,7 +254,14 @@ def _plot_path_subplot(
                 linewidth=0.6,
             )
 
-    ax.plot(years, demand, color="black", linestyle="--", linewidth=0.9, label="Strombedarf")
+    ax.plot(
+        years,
+        demand,
+        color="black",
+        linestyle="--",
+        linewidth=0.9,
+        label=_label("rampup.demand_legend", lang),
+    )
 
     label = PATH_LABELS.get(path_id, path_id)
     color = PATH_COLORS.get(path_id, "black")
@@ -253,13 +275,15 @@ def _plot_path_subplot(
 
 def render_mix_rampup_grid(
     data: MixRampupData,
-    out_path: Path | str,
+    out_path: Path | str | None = None,
     *,
     variant: Variant = "embedded",
     title: str | None = None,
     subtitle: str | None = None,
     brand: BrandConfig | None = None,
-) -> None:
+    return_fig: bool = False,
+    lang: str = "de",
+) -> plt.Figure | None:
     """Rendert das 2×3-Grid Mix-Hochlauf 2026–2055 pro Pfad.
 
     ``variant="embedded"`` (default) zeichnet ohne Gesamt-Titel und ohne
@@ -267,25 +291,43 @@ def render_mix_rampup_grid(
     kein Bild-Titel). ``variant="standalone"`` zeichnet optional einen
     Gesamt-Titel + Brand-Footer für eigenständige Veröffentlichung.
     """
-    apply_print_style()
+    apply_mobile_style() if variant == "mobile" else apply_print_style()
 
     years = list(data.years)
-    fig, axes = plt.subplots(2, 3, figsize=(16, 9))
-
-    for r, row in enumerate(GRID_ORDER):
-        for c, path_id in enumerate(row):
-            ax = axes[r, c]
+    if variant == "mobile":
+        flat_paths = [pid for row in GRID_ORDER for pid in row]
+        fig, axes_list = plt.subplots(6, 1, figsize=figsize_for_variant(variant, (16, 9)))
+        for i, path_id in enumerate(flat_paths):
+            ax = axes_list[i]
             _plot_path_subplot(
                 ax,
                 years,
                 data.layers_per_path[path_id],
                 data.demand_per_path[path_id],
                 path_id,
+                lang=lang,
             )
-            if c == 0:
-                ax.set_ylabel("Stromerzeugung (TWh/a)", fontsize=PRINT_FONT_SIZE_ANNOT)
-            if r == 1:
-                ax.set_xlabel("Jahr", fontsize=PRINT_FONT_SIZE_ANNOT)
+            ax.set_ylabel(_label("rampup.ylabel", lang), fontsize=PRINT_FONT_SIZE_ANNOT)
+            if i == len(flat_paths) - 1:
+                ax.set_xlabel(_label("common.year", lang), fontsize=PRINT_FONT_SIZE_ANNOT)
+        axes = axes_list
+    else:
+        fig, axes = plt.subplots(2, 3, figsize=(16, 9))
+        for r, row in enumerate(GRID_ORDER):
+            for c, path_id in enumerate(row):
+                ax = axes[r, c]
+                _plot_path_subplot(
+                    ax,
+                    years,
+                    data.layers_per_path[path_id],
+                    data.demand_per_path[path_id],
+                    path_id,
+                    lang=lang,
+                )
+                if c == 0:
+                    ax.set_ylabel(_label("rampup.ylabel", lang), fontsize=PRINT_FONT_SIZE_ANNOT)
+                if r == 1:
+                    ax.set_xlabel(_label("common.year", lang), fontsize=PRINT_FONT_SIZE_ANNOT)
 
     seen: set[str] = set()
     legend_h: list = []
@@ -297,16 +339,27 @@ def render_mix_rampup_grid(
                 legend_h.append(h)
                 legend_l.append(lbl)
     legend_h.append(mpatches.Patch(facecolor="none", edgecolor="red", hatch="///"))
-    legend_l.append("Defizit")
-    fig.legend(
-        legend_h,
-        legend_l,
-        loc="lower center",
-        bbox_to_anchor=(0.5, -0.02),
-        ncol=6,
-        fontsize=PRINT_FONT_SIZE_LEGEND,
-        frameon=False,
-    )
+    legend_l.append(_label("common.deficit_legend", lang))
+    if variant == "mobile":
+        fig.legend(
+            legend_h,
+            legend_l,
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.005),
+            ncol=3,
+            fontsize=PRINT_FONT_SIZE_LEGEND + 2,
+            frameon=False,
+        )
+    else:
+        fig.legend(
+            legend_h,
+            legend_l,
+            loc="lower center",
+            bbox_to_anchor=(0.5, -0.02),
+            ncol=6,
+            fontsize=PRINT_FONT_SIZE_LEGEND,
+            frameon=False,
+        )
 
     if variant == "standalone" and title:
         fig.suptitle(title, fontsize=16, fontweight="bold", y=0.995)
@@ -318,9 +371,19 @@ def render_mix_rampup_grid(
 
         add_brand_footer(fig, brand)
 
-    plt.tight_layout(rect=(0, 0.06, 1, 0.96 if variant == "standalone" and title else 1.0))
+    if variant == "mobile":
+        # Stacked single column. Reserve generous bottom space for the
+        # legend (3-col, large font, anchored below the last subplot).
+        plt.tight_layout(rect=(0, 0.08, 1, 1.0), h_pad=2.5)
+    else:
+        plt.tight_layout(rect=(0, 0.06, 1, 0.96 if variant == "standalone" and title else 1.0))
     add_oss_footer(fig)
 
+    if return_fig:
+        return fig
+
+    if out_path is None:
+        raise ValueError("out_path must be set when return_fig=False")
     out_path = Path(out_path)
     dpi = dpi_for_variant(variant)
     if variant == "web":
@@ -332,3 +395,4 @@ def render_mix_rampup_grid(
             out_path = out_path.with_suffix(".png")
         fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
+    return None

@@ -11,10 +11,14 @@ import pytest
 
 from enesys.core.regret_decision_tree import (
     CAMP_WORLDS,
+    NuclearStartYearRegretPoint,
     PolicyChoice,
     RegretMatrixCell,
     compute_regret_matrix,
     damage_bn_eur,
+    kkw_regret_crossover_year,
+    minimax_regret_per_policy,
+    nuclear_start_year_regret_analysis,
 )
 
 
@@ -68,3 +72,60 @@ def test_damage_scaling_correct():
     assert damage_bn_eur(1.0) == pytest.approx(257.4, abs=0.1)
     assert damage_bn_eur(0.5) == pytest.approx(128.7, abs=0.1)
     assert damage_bn_eur(0.0) == 0.0
+
+
+# ---------------------------------------------------------------------------
+# KKW-Startjahr-Robustheits-Check
+# ---------------------------------------------------------------------------
+
+
+def test_nuclear_start_year_regret_analysis_shape():
+    """Analyse liefert einen Punkt pro Kandidat, Eingabe-Reihenfolge,
+    erwartete Felder."""
+    years = list(range(2030, 2055, 5))
+    analysis = nuclear_start_year_regret_analysis(years)
+    assert len(analysis) == len(years)
+    for expected, point in zip(years, analysis, strict=True):
+        assert isinstance(point, NuclearStartYearRegretPoint)
+        assert point.nuclear_start_year == expected
+        assert set(point.max_regret_per_policy) == set(PolicyChoice)
+        assert all(r >= 0.0 for r in point.max_regret_per_policy.values())
+        assert isinstance(point.minimax_winner, PolicyChoice)
+        assert point.kkw_gas_regret_ee_world >= 0.0
+
+
+def test_nuclear_start_year_regret_analysis_restores_inventory():
+    """Nach dem Lauf liefert ``kkw_epr_startjahr`` wieder die
+    Lager-spezifischen Originalwerte (kein Side-Effect über den
+    ``with``-Block hinaus)."""
+    from enesys.core.inventories.tech_inventory import kkw_epr_startjahr
+
+    before_atom = kkw_epr_startjahr("atom_optimistic")
+    before_neutral = kkw_epr_startjahr("neutral_default")
+    _ = nuclear_start_year_regret_analysis([2030, 2040])
+    assert kkw_epr_startjahr("atom_optimistic") == before_atom
+    assert kkw_epr_startjahr("neutral_default") == before_neutral
+
+
+def test_kkw_regret_crossover_returns_none_at_default_parameters():
+    """Bei aktuellen Modell-Defaults gewinnt KKW-Politik im Suchbereich
+    2020-2055 nie Minimax-Regret — d.h. das Startjahr ist hier nicht
+    der bindende Constraint. Wenn dieser Test rot wird (Crossover
+    erscheint), ist eine Parameter-Setzung gekippt, die methodisch
+    nachvollzogen werden muss."""
+    crossover = kkw_regret_crossover_year((2020, 2055))
+    assert crossover is None
+
+
+def test_baseline_winner_unchanged_when_override_matches_neutral_default():
+    """Sanity: setzt die Analyse das KKW-Startjahr auf den
+    ``neutral_default``-Wert (2047), bleibt der Minimax-Sieger derselbe
+    wie bei den ungepatchten Defaults."""
+    matrix_baseline = compute_regret_matrix()
+    baseline_winner = min(
+        minimax_regret_per_policy(matrix_baseline).items(),
+        key=lambda kv: kv[1],
+    )[0]
+    # 2047 entspricht dem aktuellen neutral_default-Startjahr.
+    analysis = nuclear_start_year_regret_analysis([2047])
+    assert analysis[0].minimax_winner is baseline_winner

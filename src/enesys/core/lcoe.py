@@ -123,7 +123,7 @@ Stade Investitions-Kosten (Terminal-Bau ~500 Mio EUR für 13 Mrd m³/a).]"""
 # Lager-Bandbreite über CAMP_RANGES-Sensi-Achsen
 # ``nuclear_decom_provision_eur_mwh`` und ``nuclear_waste_transfer_eur_mwh``.
 # Lager-Spreizung spiegelt die HPC-CfD-Vertragsbandbreite +
-# NEA-Cross-Validation: atom_optimistic 2,0+1,0 (HPC-Untergrenze),
+# NEA-Robustheits-Cross-Check: atom_optimistic 2,0+1,0 (HPC-Untergrenze),
 # neutral 3,5+1,5 (Mid-Range), ee_optimistic 10,0+4,0 (NEA-Korridor-
 # Obergrenze plus Liability-Externalisierung).
 _NUCLEAR_NEUBAU_TECH_IDS: frozenset[str] = frozenset({"kkw_neubau_epr", "kkw_neubau_smr"})

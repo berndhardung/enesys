@@ -142,7 +142,7 @@ def add_wortmarke(
 
 
 def _initials(title: str) -> str:
-    """Bildet eine Kurz-Initialen-Wortmarke aus dem Buchtitel.
+    """Bildet eine Kurz-Initialen-Wortmarke aus dem Marken-Titel.
 
     Nimmt den ersten Buchstaben jedes Worts (außer Artikel/Präpositionen),
     bis maximal vier Zeichen.

@@ -11,7 +11,8 @@ Inventar-Ebene.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -909,7 +910,7 @@ _BIO_WACC_LAGER: dict[str, float] = {
 def _bio_wacc_pct(_year: int, camp: str) -> float:
     """Bio-WACC nach Lager.
 
-    [SRC: IRENA-2024 Renewable Cost Database Bio-Range 5,5-8,0 %, plus ISE-2024 WACC-Bandbreite (Tabelle Anhang B). Modell-Wert 7,0 % default liegt im oberen Bereich der Bandbreite wegen Brennstoff- Logistik-Komplexität (Substrat-Anbau-Risiko + Genehmigungs-Streit). Lager-Spreizung 6,0-8,0 % spiegelt LAGER-Sicht: ee_optimistic glaubt an stabile Bio-Roh-Stoff-Märkte (6,0 %), atom_optimistic sieht Bio als hochrisikobehaftet (8,0 %).]
+    [SRC: IRENA-2024 Renewable Cost Database Bio-Range 5,5-8,0 %, plus ISE-2024 WACC-Bandbreiten-Tabelle. Modell-Wert 7,0 % default liegt im oberen Bereich der Bandbreite wegen Brennstoff- Logistik-Komplexität (Substrat-Anbau-Risiko + Genehmigungs-Streit). Lager-Spreizung 6,0-8,0 % spiegelt LAGER-Sicht: ee_optimistic glaubt an stabile Bio-Roh-Stoff-Märkte (6,0 %), atom_optimistic sieht Bio als hochrisikobehaftet (8,0 %).]
     """
     return _BIO_WACC_LAGER.get(camp, _BIO_WACC_LAGER["neutral_default"])
 
@@ -1157,16 +1158,52 @@ KKW_REALIZATION_BY_CAMP: dict[str, float] = {
 }
 
 
-def _kkw_epr_startjahr(camp: str) -> int:
+#: Modul-interner Override des KKW-EPR-Startjahrs für Sweep-Analysen.
+#: Wenn ``[0] is not None``, liefert ``kkw_epr_startjahr`` diesen Wert
+#: für *jedes* Lager (unabhängig vom Realgrad). Wird ausschließlich
+#: über ``override_kkw_epr_startjahr`` als Kontext-Manager gesetzt —
+#: siehe ``core.regret_decision_tree.regret_nuclear_start_year_sweep``.
+#: List-mit-1-Element statt skalarem Modul-Global, damit der Setter
+#: ohne ``global``-Statement auskommt (vermeidet PLW0603-noqa im
+#: Public-Mirror).
+_KKW_EPR_STARTJAHR_OVERRIDE: list[int | None] = [None]
+
+
+def kkw_epr_startjahr(camp: str) -> int:
     """Lager-spezifisches KKW-EPR-Startjahr.
 
     Formel: ``Approval + min(T_plan / grad, T_cap)``. Damit verschiebt
     sich das Startjahr automatisch, wenn sich Approval-Jahr oder
-    Realgrad-Tabelle ändert.
+    Realgrad-Tabelle ändert. Ist ein Override über
+    ``override_kkw_epr_startjahr`` aktiv, gewinnt der Override.
     """
+    override = _KKW_EPR_STARTJAHR_OVERRIDE[0]
+    if override is not None:
+        return override
     grad = KKW_REALIZATION_BY_CAMP.get(camp, 0.40)
     t_build = min(KKW_EPR_PLAN_YEARS / max(1e-9, grad), KKW_EPR_T_CAP)
     return KKW_EPR_APPROVAL_YEAR + int(round(t_build))
+
+
+@contextmanager
+def override_kkw_epr_startjahr(year: int) -> Iterator[None]:
+    """Setzt das KKW-EPR-Startjahr für die Dauer des Kontexts.
+
+    Innerhalb des ``with``-Blocks liefert ``kkw_epr_startjahr`` für
+    *jedes* Lager den übergebenen Wert (Lager-Heterogen ausgeschaltet).
+    Nach Verlassen wird der vorherige Zustand wiederhergestellt — auch
+    bei Exceptions.
+
+    Verwendet von Sweep-Analysen, die das Startjahr unabhängig vom
+    Lager-Realisierungsgrad variieren (siehe
+    ``regret_nuclear_start_year_sweep``).
+    """
+    previous = _KKW_EPR_STARTJAHR_OVERRIDE[0]
+    _KKW_EPR_STARTJAHR_OVERRIDE[0] = int(year)
+    try:
+        yield
+    finally:
+        _KKW_EPR_STARTJAHR_OVERRIDE[0] = previous
 
 
 def _kkw_neubau_epr_max_zubau_gw_per_year(year: int, path: str, camp: str) -> float:
@@ -1202,7 +1239,7 @@ def _kkw_neubau_epr_max_zubau_gw_per_year(year: int, path: str, camp: str) -> fl
     """
     if path not in ("kkw_gas", "kkw_h2"):
         return 0.0
-    startjahr = _kkw_epr_startjahr(camp)
+    startjahr = kkw_epr_startjahr(camp)
     if year < startjahr:
         return 0.0
     lager_mult = KKW_REALIZATION_BY_CAMP.get(camp, 0.40)

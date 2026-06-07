@@ -6,7 +6,7 @@ kanonische Trajektorien-Definition für Pfad-Vergleiche; Snapshot-Lesungen
 
 Mix-Aggregationen (`snapshot_mix`, `mean_mix`, `steady_state_mix`)
 exposen `PathResult.mix_by_technology` als zentrale Schnittstelle für
-Hochlauf-Charts und Buch-Auszüge.
+Hochlauf-Charts und Display-Tabellen.
 
 Geprüft:
 

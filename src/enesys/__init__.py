@@ -44,7 +44,7 @@ CO₂-Lock-in und Winter-Stresstest::
         winter_stress_balance,
     )
 
-Externe Parameter-Sets als Cross-Validation::
+Externe Parameter-Sets als Robustheits-Cross-Check::
 
     from enesys import PARAM_SETS, ParamSet, baseline_all_paths
     prices = baseline_all_paths(year=2045, param_set="ariadne_pypsa")
@@ -103,6 +103,15 @@ from enesys.core.path_sensitivity import (
     camp_preset_params,
     camp_range_2045,
     camp_value_2045,
+)
+from enesys.core.regret_decision_tree import (
+    NuclearStartYearRegretPoint,
+    PolicyChoice,
+    RegretMatrixCell,
+    compute_regret_matrix,
+    kkw_regret_crossover_year,
+    minimax_regret_per_policy,
+    nuclear_start_year_regret_analysis,
 )
 from enesys.core.rolling_lcoe import (
     rolling_all_paths,
@@ -172,6 +181,14 @@ __all__ = [
     # Sensitivitäts-Analysen
     "tornado_path_analysis",
     "monte_carlo_all_paths",
+    # Savage-Minimax-Regret-Matrix + KKW-Startjahr-Robustheits-Check
+    "PolicyChoice",
+    "RegretMatrixCell",
+    "compute_regret_matrix",
+    "minimax_regret_per_policy",
+    "NuclearStartYearRegretPoint",
+    "nuclear_start_year_regret_analysis",
+    "kkw_regret_crossover_year",
     # CO₂-Lock-in
     "co2_lockin_metric",
     "co2_lockin_report",

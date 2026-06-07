@@ -1,0 +1,13 @@
+# Streamlit Community Cloud install hint.
+#
+# Streamlit Cloud installs from requirements.txt deterministically;
+# pyproject.toml-only projects can leave base dependencies un-installed
+# even when [project.dependencies] declares them. This file mirrors the
+# base dependencies from pyproject.toml so Streamlit Cloud always picks
+# them up. uv.lock is the authoritative dev/CI pin — do not edit this
+# file by hand for version bumps, mirror from pyproject.toml.
+numpy>=1.26.0,<3.0
+streamlit>=1.36.0,<2.0
+plotly>=5.18.0,<7.0
+pandas>=2.1.0,<3.0
+matplotlib>=3.8.0,<4.0

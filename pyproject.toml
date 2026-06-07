@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "enesys"
-dynamic = ["version"]
+version = "0.2.0"
 description = "Forward-cost analysis of Germany's energy transition — 6 paths, Monte-Carlo, fully open and reproducible"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -78,8 +78,13 @@ Changelog = "https://github.com/berndhardung/enesys/blob/main/CHANGELOG.md"
 [tool.setuptools]
 package-dir = { "" = "src" }
 
-[tool.setuptools.dynamic]
-version = { file = "VERSION" }
+# Runtime-Version wird in ``src/enesys/version.py`` aus der
+# ``VERSION``-Datei + Git-Status ermittelt (siehe docs/VERSIONING.md).
+# Für Build-Metadaten ist die Version oben in ``[project]`` statisch
+# gepinnt — uv lock kann mit dynamic-version-Paketen nicht umgehen
+# (kein ``version =``-Feld im uv.lock-Eintrag → Streamlit-Cloud-uv
+# rejected den Lock). Bei Release: beide Stellen mit-bumpen
+# (``[project] version`` plus ``VERSION``-Datei).
 
 [tool.setuptools.packages.find]
 where = ["src"]

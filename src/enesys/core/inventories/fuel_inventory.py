@@ -360,8 +360,8 @@ def _h2_inland_preis(year: int, camp: str) -> float:
     Lernkurve und Strompreis-Trajektorie sinkend auf 80-120 €/MWh @ 2045.
 
     [SRC: EWI-2024 H2-Studie »Wasserstoff in Deutschland 2024«,
-    BMWK-H2-Strategie Update 2023 (Preis-Bandbreite Anhang B),
-    Hydrogen Council Path to Hydrogen Competitiveness 2024-Update.
+    BMWK-H2-Strategie Update 2023 (Preis-Bandbreite im Anhang der
+    Strategie), Hydrogen Council Path to Hydrogen Competitiveness 2024-Update.
     2026-Bandbreite 150-200 €/MWh entspricht heutigen Elektrolyseur-
     CAPEX 1.500-2.000 €/kW + EE-Strompreis 60-80 €/MWh; 2045-Bandbreite
     80-130 €/MWh folgt IEA-NZE-Lernkurve auf 500 €/kW + EE-Strom-

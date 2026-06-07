@@ -1,4 +1,5 @@
-"""Convergence-Test: Pfad-Reihenfolge robust gegen Ariadne/PyPSA-Substrat.
+"""Parameter-substrate robustness check: Pfad-Reihenfolge robust gegen
+Ariadne/PyPSA-Substrat.
 
 Der zentrale enesys-Befund ist die strukturelle Pfad-Ordnung: EE-GAS
 in den Top-2, KKW-H2 als teuerster Pfad, KKW-Pfade nicht günstiger als
@@ -9,7 +10,10 @@ Platz tauschen — das schwächt die Architektur-Aussage nicht.
 Dieser Test stellt sicher, dass die strukturellen Eckpunkte erhalten
 bleiben, wenn man die enesys-Default-Annahmen durch das PyPSA/
 technology-data Substrat ersetzt (die Eingabe-Datenbank von PyPSA-DE /
-BMBF-Ariadne).
+BMBF-Ariadne). Die Bezeichnung »Robustheits-Cross-Check« statt
+»Cross-Validation« ist bewusst — Cross-Validation hat in der Statistik
+eine spezifische Train/Test-Bedeutung, die hier nicht gemeint ist:
+hier wird das gesamte Annahmen-Substrat ersetzt, nicht Hold-out-Daten.
 
 Drei Aussagen werden geprüft
 ----------------------------

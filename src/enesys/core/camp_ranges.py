@@ -384,7 +384,7 @@ CAMP_RANGES = {
         # KKW-Neubau Decommissioning-Rückstellung pro MWh Output (€/MWh).
         # Wirkt nur auf kkw_neubau_epr + kkw_neubau_smr (kkw_bestand
         # hat KENFO-Fonds historisch abgelegt — siehe sunk_*-Doku-Felder).
-        # HPC-CfD-Bandbreite + NEA-Cross-Validation:
+        # HPC-CfD-Bandbreite + NEA-Robustheits-Cross-Check:
         #  - 2,0 (atom_optimistic): HPC-Untergrenze £1/MWh ≈ €2/MWh —
         #    Atom-Lager-Position »Decom-Risiken eng kalkulierbar,
         #    Funded Decommissioning Programme deckt Rückbau«.

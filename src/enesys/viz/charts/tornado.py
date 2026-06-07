@@ -26,12 +26,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
-from enesys.viz.charts._helpers import Variant, add_oss_footer, dpi_for_variant
+from enesys.viz.charts._helpers import (
+    Variant,
+    add_oss_footer,
+    dpi_for_variant,
+    figsize_for_variant,
+)
+from enesys.viz.charts.labels import label as _label
+from enesys.viz.charts.labels import translate_tornado_lever_label
 from enesys.viz.matplotlib_style import (
     PRINT_FONT_SIZE_ANNOT,
     PRINT_FONT_SIZE_BAR_LABEL,
     PRINT_FONT_SIZE_LEGEND,
     STD_FIGSIZE_DOUBLE,
+    apply_mobile_style,
     apply_print_style,
 )
 from enesys.viz.theme import PATH_COLORS, PATH_LABELS
@@ -72,6 +80,7 @@ def compute_tornado_data(
     camp: str = "neutral_default",
     param_set: str | None = None,
     year: int = 2026,
+    param_overrides: dict[str, float] | None = None,
 ) -> TornadoData:
     """Sammelt Tornado-Daten pro Pfad aus ``tornado_path_analysis``.
 
@@ -96,7 +105,15 @@ def compute_tornado_data(
         overrides_per_year = _get_param_set(param_set).overrides_yearly([year])
         baseline_overrides = overrides_per_year.get(year)
 
-    baselines = baseline_all_paths(year=year, camp=camp, param_set=param_set)
+    if param_overrides:
+        baseline_overrides = {**(baseline_overrides or {}), **param_overrides}
+
+    baselines = baseline_all_paths(
+        year=year,
+        camp=camp,
+        param_set=param_set,
+        param_overrides=param_overrides,
+    )
     pfade: list[PathTornado] = []
     for path_id in path_ids:
         hebel = tornado_path_analysis(
@@ -116,14 +133,21 @@ def compute_tornado_data(
     return TornadoData(pfade=tuple(pfade), camp=camp, year=year)
 
 
-def _draw_tornado_panel(ax: Axes, ptornado: PathTornado, *, color: str, variant: Variant) -> None:
+def _draw_tornado_panel(
+    ax: Axes,
+    ptornado: PathTornado,
+    *,
+    color: str,
+    variant: Variant,
+    lang: str = "de",
+) -> None:
     """Zeichnet einen Tornado-Subplot für einen Pfad.
 
     Subplot-Titel: bei ``embedded`` nur der Pfad-Name (umgebende Caption
     erklärt »Tornado«); bei ``standalone``/``epub`` zusätzlich " · Tornado".
     """
     sig = [r for r in ptornado.hebel if r["swing"] > MIN_SWING][:MAX_HEBEL]
-    labels = [r["label"] for r in sig]
+    labels = [translate_tornado_lever_label(r["label"], lang) for r in sig]
     lows = [r["price_low"] for r in sig]
     highs = [r["price_high"] for r in sig]
 
@@ -222,10 +246,10 @@ def _draw_tornado_panel(ax: Axes, ptornado: PathTornado, *, color: str, variant:
     ax.set_yticks(y)
     ax.set_yticklabels(labels)
     ax.invert_yaxis()
-    ax.set_xlabel("Forward Cost (ct/kWh)", fontsize=PRINT_FONT_SIZE_ANNOT)
+    ax.set_xlabel(_label("tornado.xlabel", lang), fontsize=PRINT_FONT_SIZE_ANNOT)
     title_text = PATH_LABELS[ptornado.path_id]
     if variant != "embedded":
-        title_text = f"{title_text} · Tornado"
+        title_text = f"{title_text}{_label('tornado.subtitle_suffix', lang)}"
     ax.set_title(
         title_text,
         fontsize=PRINT_FONT_SIZE_ANNOT + 2,
@@ -239,24 +263,34 @@ def _draw_tornado_panel(ax: Axes, ptornado: PathTornado, *, color: str, variant:
 
 def render_tornado_sensitivity(
     data: TornadoData,
-    out_path: Path | str,
+    out_path: Path | str | None = None,
     *,
     variant: Variant = "embedded",
     title: str | None = None,
     subtitle: str | None = None,
     brand: BrandConfig | None = None,
-) -> None:
-    """Rendert das Tornado-Side-by-Side für die zwei Default-Pfade."""
-    apply_print_style()
+    return_fig: bool = False,
+    lang: str = "de",
+) -> plt.Figure | None:
+    """Render the tornado side-by-side for the two default paths.
+
+    When ``return_fig=True``, the matplotlib ``Figure`` is returned for
+    Streamlit embedding via ``st.pyplot`` and no file is written.
+    """
+    apply_mobile_style() if variant == "mobile" else apply_print_style()
 
     n = len(data.pfade)
-    fig, axes = plt.subplots(1, n, figsize=STD_FIGSIZE_DOUBLE, gridspec_kw={"wspace": 0.4})
+    figsize = figsize_for_variant(variant, STD_FIGSIZE_DOUBLE)
+    if variant == "mobile":
+        fig, axes = plt.subplots(n, 1, figsize=figsize, gridspec_kw={"hspace": 0.4})
+    else:
+        fig, axes = plt.subplots(1, n, figsize=figsize, gridspec_kw={"wspace": 0.4})
     if n == 1:
         axes = [axes]
 
     for ax, ptornado in zip(axes, data.pfade, strict=True):
         color = PATH_COLORS.get(ptornado.path_id, "#888")
-        _draw_tornado_panel(ax, ptornado, color=color, variant=variant)
+        _draw_tornado_panel(ax, ptornado, color=color, variant=variant, lang=lang)
 
     if variant == "standalone" and title:
         fig.suptitle(title, fontsize=16, fontweight="bold", y=0.99)
@@ -278,6 +312,11 @@ def render_tornado_sensitivity(
     plt.subplots_adjust(bottom=0.14)
     add_oss_footer(fig)
 
+    if return_fig:
+        return fig
+
+    if out_path is None:
+        raise ValueError("out_path must be set when return_fig=False")
     out_path = Path(out_path)
     dpi = dpi_for_variant(variant)
     if variant == "web":
@@ -289,3 +328,4 @@ def render_tornado_sensitivity(
             out_path = out_path.with_suffix(".png")
         fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
+    return None

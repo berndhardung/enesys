@@ -1,43 +1,44 @@
-# PARAM_SETS.md — Externe Annahmen-Vergleichspunkte als first-class Konstrukt
+# PARAM_SETS.md — External assumption substrates as a first-class construct
 
-## Was ist ein ParamSet?
+## What is a ParamSet?
 
-Ein **ParamSet** bündelt das Default-Annahmen-Substrat einer externen
-Modellfamilie (PyPSA-DE/Ariadne, NEA-IEA PCGE, BNEF, Fraunhofer ISE, …)
-als reproduzierbares Override-Dict für `compute_path`. Es übersetzt
-die Tech-Namen der externen Quelle auf enesys-Tech-IDs und liefert
-Trajektorien-Werte für CAPEX, FOM, VOM, WACC und Brennstoffpreise über
-die Stützstellen 2030 / 2040 / 2050.
+A **ParamSet** bundles the default assumption substrate of an external
+model family (PyPSA-DE/Ariadne, NEA-IEA PCGE, BNEF, Fraunhofer ISE, …)
+as a reproducible override dict for `compute_path`. It translates the
+tech names of the external source to enesys tech IDs and supplies
+trajectory values for CAPEX, FOM, VOM, WACC, and fuel prices over
+knot years 2030 / 2040 / 2050.
 
-## Abgrenzung zu CAMP_RANGES
+## Distinction from CAMP_RANGES
 
-| Aspekt | CAMP_RANGES | ParamSet |
+| Aspect | CAMP_RANGES | ParamSet |
 |---|---|---|
-| Argument | politisch | methodisch |
-| Frage | »Was würde dieses Lager als Bandbreite akzeptieren?« | »Bleibt unser Befund unter dem Annahmen-Substrat eines anderen Modells erhalten?« |
-| Inhalt | EE-/Atom-/Bestand-optimistisch, Neutral-Default | konkrete Default-Werte einer externen Quelle |
-| Repräsentation | Bandbreiten pro Tech | Stützstellen-Trajektorie pro Tech |
-| Override-Mechanismus | gemeinsam: `param_overrides` in `compute_path` | gemeinsam: `param_overrides` in `compute_path` |
+| Argument | political | methodological |
+| Question | "What range would this camp accept?" | "Does our finding survive under the assumption substrate of another model?" |
+| Content | EE/atom/existing-fleet-optimistic, neutral default | concrete default values of an external source |
+| Representation | range per tech | knot-point trajectory per tech |
+| Override mechanism | shared: `param_overrides` in `compute_path` | shared: `param_overrides` in `compute_path` |
 
-Beide Strukturen sind kompatibel zur Tornado-/Monte-Carlo-Infrastruktur.
+Both structures are compatible with the tornado / Monte-Carlo
+infrastructure.
 
-## Verwendung
+## Usage
 
 ```python
 from enesys import rolling_all_paths
 
-# Standard enesys-Annahmen (Rolling 30-J ab 2026, kanonisch):
+# Standard enesys assumptions (rolling 30-yr from 2026, canonical):
 default = rolling_all_paths(year=2026)
 
-# Mit externem Substrat (Ariadne/PyPSA):
+# With external substrate (Ariadne/PyPSA):
 ariadne = rolling_all_paths(year=2026, param_set="ariadne_pypsa")
 
-# Verfügbare Sets:
+# Available sets:
 from enesys import PARAM_SETS
 print(list(PARAM_SETS))
 ```
 
-Pfad-für-Pfad-Aufruf:
+Path-by-path call:
 
 ```python
 from enesys import compute_path
@@ -45,14 +46,14 @@ from enesys import compute_path
 result = compute_path(
     "ee_gas",
     years=[2030, 2040, 2050],
-    param_set="ariadne_pypsa",  # Trajektorie wirkt jahresweise
+    param_set="ariadne_pypsa",  # trajectory takes effect year by year
 )
 ```
 
-Kombination mit konstanten Overrides (z.B. für Monte-Carlo-Sample):
+Combination with constant overrides (e.g. for a Monte-Carlo sample):
 
 ```python
-# Trajektorie als Basis, konstanter Override hat Vorrang:
+# Trajectory as the base, constant override takes precedence:
 compute_path(
     "ee_gas",
     [2045],
@@ -61,134 +62,137 @@ compute_path(
 )
 ```
 
-CLI-Inspektion (Override-Werte für ein Jahr anzeigen):
+CLI inspection (display override values for one year):
 
 ```bash
 python -m enesys.core.param_sets.ariadne_pypsa
 ```
 
-## Verfügbare Sets
+## Available sets
 
 ### ariadne_pypsa
 
-PyPSA-Tech-Data Default-Annahmen 2030 / 2040 / 2050 — das Annahmen-Substrat
-der BMBF-Ariadne-Modellfamilie.
+PyPSA-Tech-Data default assumptions 2030 / 2040 / 2050 — the
+assumption substrate of the BMBF-Ariadne model family.
 
-- **Quelle:** [PyPSA/technology-data](https://github.com/PyPSA/technology-data)
-- **Primäre Zitate:** Lazard 16.0 (Nuclear, Coal), Danish Energy Agency
-  (Renewables, Gas, Electrolysis), ENTSO-E/ENTSOG TYNDP 2024 (Brennstoffpreise)
-- **Stützstellen:** 2030 / 2040 / 2050
-- **Preisbasis:** EUR_2025
+- **Source:** [PyPSA/technology-data](https://github.com/PyPSA/technology-data)
+- **Primary citations:** Lazard 16.0 (nuclear, coal), Danish Energy
+  Agency (renewables, gas, electrolysis), ENTSO-E/ENTSOG TYNDP 2024
+  (fuel prices)
+- **Knot years:** 2030 / 2040 / 2050
+- **Price basis:** EUR_2025
 
-**Methodische Einordnung.** PyPSA-DE ist als Modell-Framework EE-leaning
-(Default-Szenarien ohne Kernkraft); die einzelnen Parameter-Werte sind
-jedoch sauber primärquellen-gestützt und nicht atom-feindlich.
-Nuclear-CAPEX (10 806 EUR/kW, Lazard 16.0) ist fast deckungsgleich mit
-enesys-neutral (11 000 EUR/kW).
+**Methodological classification.** PyPSA-DE is EE-leaning as a model
+framework (default scenarios without nuclear); the individual
+parameter values, however, are cleanly grounded in primary sources
+and not anti-nuclear. Nuclear CAPEX (10,806 EUR/kW, Lazard 16.0) is
+almost identical to enesys-neutral (11,000 EUR/kW).
 
 
-## Wie füge ich ein neues Set hinzu?
+## How do I add a new set?
 
-1. **Template kopieren:**
+1. **Copy the template:**
    ```bash
    cp src/enesys/core/param_sets/_template.py src/enesys/core/param_sets/{name}.py
    ```
-2. **Werte hard-coden** aus der Primärquelle. *Nicht* zur Laufzeit aus CSVs
-   laden — explizite Werte im Code sind das Ziel für Reproduzierbarkeit.
-3. **Mapping anpassen:**
-   - Externe Tech-Namen → enesys-Tech-IDs in `_TECH_MAPPING`
-   - Externe Fuel-Namen → enesys-Fuel-IDs in `_FUEL_MAPPING`
-   - Vorsicht bei 1:n-Mappings (z.B. externes »nuclear« → enesys
+2. **Hard-code the values** from the primary source. Do *not* load
+   them at runtime from CSVs — explicit values in code are the goal
+   for reproducibility.
+3. **Adjust the mapping:**
+   - External tech names → enesys tech IDs in `_TECH_MAPPING`
+   - External fuel names → enesys fuel IDs in `_FUEL_MAPPING`
+   - Watch for 1:n mappings (e.g. external "nuclear" → enesys
      `kkw_bestand` + `kkw_neubau_epr` + `kkw_neubau_smr`)
-4. **Caveats vollständig dokumentieren** — was differiert methodisch zwischen
-   der Quelle und enesys? Lerneffekte, WACC-Behandlung, Bauzeit-
-   Modellierung, Fuel-Preise.
-5. **Registry-Eintrag** in `src/enesys/core/param_sets/__init__.py`:
+4. **Document the caveats fully** — what differs methodologically
+   between the source and enesys? Learning effects, WACC handling,
+   build-time modeling, fuel prices.
+5. **Registry entry** in `src/enesys/core/param_sets/__init__.py`:
    ```python
    from enesys.core.param_sets.{name} import {NAME}_SET
    PARAM_SETS[{NAME}_SET.name] = {NAME}_SET
    ```
-6. **Convergence-Test** `tests/consistency/test_{name}_convergence.py`
-   nach Vorbild von `test_ariadne_convergence.py`. Sechs Test-Slots:
-   Registry-Eintrag, Override-Keys-Hygiene, LCOE-Plausibilität,
-   Pfad-Reihenfolge-Konvergenz, Diff-Bandbreite, Trajektorie-Interpolation.
+6. **Convergence test** `tests/consistency/test_{name}_convergence.py`
+   modeled on `test_ariadne_convergence.py`. Six test slots:
+   registry entry, override-keys hygiene, LCOE plausibility, path-
+   order convergence, diff range, trajectory interpolation.
 
-## Daten-Konventionen
+## Data conventions
 
-### Trajektorie-Wert-Format
+### Trajectory value format
 
 ```python
 {
-    # zeitkonstant:
+    # time-constant:
     "kkw_neubau_epr.capex_eur_kw": 10805.70,
 
-    # Stützstellen (≥ 1, beliebige Jahre):
+    # knot points (≥ 1, arbitrary years):
     "pv.capex_eur_kw": {2030: 482.48, 2040: 403.38, 2050: 367.87},
 
-    # nur 2 Stützstellen — Interpolation zwischen denen, konstant außerhalb:
+    # only 2 knot points — interpolation between them, constant outside:
     "steinkohle.preis_eur_mwh": {2030: 7.82, 2050: 6.72},
 }
 ```
 
-`ParamSet.overrides(year)` löst Stützstellen via linearer Interpolation
-auf. Außerhalb des Bereichs wird der nächstgelegene Rand-Wert konstant
-fortgesetzt — keine Trend-Extrapolation, weil Lerneffekte jenseits der
-Quell-Horizonte spekulativ sind.
+`ParamSet.overrides(year)` resolves knot points via linear
+interpolation. Outside the range the nearest edge value is held
+constant — no trend extrapolation, because learning effects beyond
+the source horizons are speculative.
 
-### Erlaubte Override-Felder
+### Allowed override fields
 
-`compute_path` akzeptiert nur die folgenden Override-Keys:
+`compute_path` accepts only the following override keys:
 
-| Key-Muster | Bedeutung |
+| Key pattern | Meaning |
 |---|---|
-| `<tech_id>.capex_eur_kw` | TechEntry-CAPEX in EUR/kW |
-| `<tech_id>.wacc_pct` | WACC als **Anteil** (0.0536 = 5.36%) — *Name ist irreführend* |
-| `<tech_id>.opex_fix_eur_kw_a` | fixe Betriebskosten in EUR/kW/a |
-| `<tech_id>.opex_var_eur_mwh` | variable Betriebskosten in EUR/MWh |
-| `<tech_id>.vlh_normal` | Volllaststunden im Normalbetrieb |
-| `<fuel_id>.preis_eur_mwh` | Brennstoffpreis in EUR/MWh_th |
-| `co2_price_eur_t` | globaler CO₂-Preis |
+| `<tech_id>.capex_eur_kw` | TechEntry CAPEX in EUR/kW |
+| `<tech_id>.wacc_pct` | WACC as a **share** (0.0536 = 5.36 %) — *name is misleading* |
+| `<tech_id>.opex_fix_eur_kw_a` | fixed operating cost in EUR/kW/yr |
+| `<tech_id>.opex_var_eur_mwh` | variable operating cost in EUR/MWh |
+| `<tech_id>.vlh_normal` | full-load hours in normal operation |
+| `<fuel_id>.preis_eur_mwh` | fuel price in EUR/MWh_th |
+| `co2_price_eur_t` | global CO₂ price |
 
-Andere Felder (lifetime, efficiency etc.) sind nicht über
-`param_overrides` überschreibbar und müssen ggf. tech-inventory-seitig
-geändert werden.
+Other fields (lifetime, efficiency, etc.) are not overridable via
+`param_overrides` and must be changed on the tech-inventory side if
+needed.
 
-### Werte hard-coden statt CSV laden
+### Hard-code values instead of loading CSV
 
-Externe Quellen werden bewusst hard-coded in `*.py` übernommen, nicht
-zur Laufzeit aus CSV gelesen. Begründung:
+External sources are deliberately hard-coded into `*.py` files and not
+read at runtime from CSV. Reasons:
 
-- **Reproduzierbarkeit** ohne externe Datei-Abhängigkeit
-- **Explizite Werte im Code** — Lesbarkeit, Diff-fähig
-- **Bewusste Re-Pflege** bei Quell-Updates statt stiller Drift
-- **Keine pandas-Abhängigkeit** für den Override-Pfad
+- **Reproducibility** without external file dependency
+- **Explicit values in code** — readable, diffable
+- **Deliberate re-curation** on source updates instead of silent drift
+- **No pandas dependency** for the override path
 
-Jede Set-Datei dokumentiert im Modul-Docstring den Quell-Commit/-Stand,
-damit der Wert-Übertrag rückverfolgbar bleibt.
+Each set file documents the source commit / state in the module
+docstring, so the value transfer remains traceable.
 
-## Architektur-Robustheit
+## Architectural robustness
 
-Bei neuen Sets ändert sich am Bestands-Code:
+Adding a new set changes existing code as follows:
 
-- **Eine neue Datei** `src/enesys/core/param_sets/{name}.py`
-- **Eine Registry-Zeile** in `__init__.py`
-- **Optional** ein eigener Convergence-Test
+- **A new file** `src/enesys/core/param_sets/{name}.py`
+- **A registry line** in `__init__.py`
+- **Optionally** a dedicated convergence test
 
-**Was nicht angefasst werden muss:** `compute_path()`, `baseline_all_paths()`,
-`path_model.py`, CAMP_RANGES, bestehende Tests, Tech-/Fuel-Inventare.
+**What does not need to be touched:** `compute_path()`,
+`baseline_all_paths()`, `path_model.py`, CAMP_RANGES, existing tests,
+tech / fuel inventories.
 
-**Bekannte Risiko-Stelle:** enesys-Tech-ID-Umbenennung würde alle Sets
-gleichzeitig brechen. Mitigation: `assert_known_keys()` im Convergence-Test
-failt mit klarer Liste der unbekannten Keys — Refactor-Pflicht wird sichtbar
-statt durch obskuren Modell-Crash.
+**Known risk spot:** renaming an enesys tech ID would break all sets
+at once. Mitigation: `assert_known_keys()` in the convergence test
+fails with a clear list of unknown keys — refactor obligations
+become visible instead of an obscure model crash.
 
-## Multi-Year-Overrides
+## Multi-year overrides
 
-`compute_path` unterstützt drei Override-Quellen mit klarer Priorität:
+`compute_path` supports three override sources with clear priority:
 
-1. `param_set` (Trajektorie, niedrigste Priorität)
-2. `param_overrides` (konstant über alle Jahre)
-3. `param_overrides_yearly` (pro Jahr, höchste Priorität)
+1. `param_set` (trajectory, lowest priority)
+2. `param_overrides` (constant across all years)
+3. `param_overrides_yearly` (per year, highest priority)
 
-Bei mehrjährigen Läufen wird die ParamSet-Trajektorie jahresweise aufgelöst
-— die Lerneffekte wirken also echt, kein Bezugsjahr-Mittel.
+For multi-year runs the ParamSet trajectory is resolved year by year
+— so learning effects are real, not averaged to a reference year.

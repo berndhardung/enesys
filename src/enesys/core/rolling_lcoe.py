@@ -29,8 +29,8 @@ jährlichen ``lcoe_ct_kwh`` enthalten bereits die Annuität (= WACC-
 Diskontierung der CAPEX). Eine zusätzliche DCF-Gewichtung der Jahres-
 scheiben wäre Doppeldiskontierung und würde Bridge-Pfade systematisch
 billiger erscheinen lassen (Frühjahre stärker gewichtet) und KKW mit
-spätem IBN-Jahr teurer. Arithmetisch entspricht der Lesart der Buch-
-Anker (»Durchschnittspreis im Investment-Lebenszyklus«).
+spätem IBN-Jahr teurer. Die arithmetische Lesart entspricht dem
+»Durchschnittspreis im Investment-Lebenszyklus«.
 
 Schnellzugriff für 6-Pfade-Tabellen: :func:`rolling_all_paths` liefert
 die Pfad-Label-Matrix (»EE-GAS« etc.) analog zu

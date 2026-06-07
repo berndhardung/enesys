@@ -857,6 +857,7 @@ def winter_stress_balance(
     battery_share: dict[str, float] | None = None,
     bat_system_gw: float = 108.0,
     param_set: str | None = None,
+    param_overrides: dict[str, float] | None = None,
 ) -> dict[str, WinterStressResultBalance]:
     """Stresstest auf Basis der Schatten-Pipeline.
 
@@ -914,6 +915,7 @@ def winter_stress_balance(
             camp,
             system_state=SystemState.DUNKELFLAUTE,
             param_set=param_set,
+            param_overrides=param_overrides,
         )
         if not path_results:
             continue

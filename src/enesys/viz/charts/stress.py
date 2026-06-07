@@ -29,17 +29,24 @@ import numpy as np
 from matplotlib.axes import Axes
 
 from enesys.core.fuel import split_gas_h2ready_by_fuel
-from enesys.viz.charts._helpers import Variant, add_oss_footer, dpi_for_variant
+from enesys.viz.charts._helpers import (
+    Variant,
+    add_oss_footer,
+    dpi_for_variant,
+    figsize_for_variant,
+)
+from enesys.viz.charts.labels import label as _label
 from enesys.viz.matplotlib_style import (
     PRINT_FONT_SIZE_ANNOT,
     PRINT_FONT_SIZE_LEGEND,
+    apply_mobile_style,
     apply_print_style,
 )
 from enesys.viz.theme import (
     MENGENBILANZ_SCHICHT_COLORS,
-    MENGENBILANZ_SCHICHT_LABELS,
     PATH_COLORS,
     PATH_LABELS,
+    mengenbilanz_label,
 )
 
 if TYPE_CHECKING:
@@ -115,9 +122,13 @@ _STRESS_TO_MENGENBILANZ_KEY: dict[str, str] = {
     "importe": "importe",
     "strategische_reserve": "strategische_reserve",
 }
-STRESS_LAYER_LABELS: dict[str, str] = {
-    k: MENGENBILANZ_SCHICHT_LABELS[v] for k, v in _STRESS_TO_MENGENBILANZ_KEY.items()
-}
+
+
+def stress_layer_label(layer: str, lang: str = "de") -> str:
+    """Return the stress-chart layer label in the requested language."""
+    return mengenbilanz_label(_STRESS_TO_MENGENBILANZ_KEY[layer], lang)
+
+
 STRESS_LAYER_COLORS: dict[str, str] = {
     k: MENGENBILANZ_SCHICHT_COLORS[v] for k, v in _STRESS_TO_MENGENBILANZ_KEY.items()
 }
@@ -168,7 +179,11 @@ def _stress_order_from_model(path_id: str) -> list[str]:
 
 
 def collect_path_stress(
-    path_id: str, *, camp: str = "neutral_default", param_set: str | None = None
+    path_id: str,
+    *,
+    camp: str = "neutral_default",
+    param_set: str | None = None,
+    param_overrides: dict[str, float] | None = None,
 ) -> PathStress:
     """Sammelt Stress-Coverage pro Stützjahr für einen Pfad.
 
@@ -206,6 +221,7 @@ def collect_path_stress(
             ws=ws,
             electrification_scaling=elec_skal,
             param_set=param_set,
+            param_overrides=param_overrides,
         )
         if path_id not in results:
             peak_demand_gw.append(0.0)
@@ -273,15 +289,23 @@ def compute_stress_rampup_data(
     *,
     camp: str = "neutral_default",
     param_set: str | None = None,
+    param_overrides: dict[str, float] | None = None,
 ) -> StressRampupData:
-    """Sammelt Stress-Coverage für alle sechs Pfade aus dem 2×3-Grid.
+    """Collect stress-test coverage for all six paths in the 2×3 grid.
 
-    ``param_set`` lädt ein externes Annahmen-Substrat (z. B. ``"ariadne_pypsa"``).
+    ``param_overrides`` is threaded into ``compute_path`` via
+    ``winter_stress_balance`` so realisation-rate and CAPEX sliders
+    propagate into the installed-capacity stress test.
     """
     path_stress: dict[str, PathStress] = {}
     for row in GRID_ORDER:
         for path_id in row:
-            path_stress[path_id] = collect_path_stress(path_id, camp=camp, param_set=param_set)
+            path_stress[path_id] = collect_path_stress(
+                path_id,
+                camp=camp,
+                param_set=param_set,
+                param_overrides=param_overrides,
+            )
     return StressRampupData(years=STUETZJAHRE, path_stress=path_stress, camp=camp)
 
 
@@ -291,6 +315,8 @@ def _plot_path_subplot(
     years: list[int],
     stress: PathStress,
     path_id: str,
+    *,
+    lang: str = "de",
 ) -> None:
     path_layers = _stress_order_from_model(path_id)
     bottom = np.zeros(len(years))
@@ -302,7 +328,7 @@ def _plot_path_subplot(
             years,
             values,
             bottom=bottom,
-            label=STRESS_LAYER_LABELS[layer],
+            label=stress_layer_label(layer, lang),
             color=STRESS_LAYER_COLORS[layer],
             alpha=0.85,
             width=1.5,
@@ -316,7 +342,7 @@ def _plot_path_subplot(
         color="black",
         linestyle="--",
         linewidth=1.2,
-        label="Spitzenbedarf (Dunkelflaute)",
+        label=_label("stress.peak_demand_legend", lang),
     )
 
     for x, b, d in zip(years, bottom, stress.deficit_gw, strict=True):
@@ -348,29 +374,42 @@ def _plot_path_subplot(
 
 def render_stress_rampup_grid(
     data: StressRampupData,
-    out_path: Path | str,
+    out_path: Path | str | None = None,
     *,
     variant: Variant = "embedded",
     title: str | None = None,
     subtitle: str | None = None,
     brand: BrandConfig | None = None,
-) -> None:
+    return_fig: bool = False,
+    lang: str = "de",
+) -> plt.Figure | None:
     """Rendert das 2×3-Grid Stresstest-Hochlauf 2026–2055 pro Pfad."""
-    apply_print_style()
+    apply_mobile_style() if variant == "mobile" else apply_print_style()
 
     years = list(data.years)
-    fig, axes = plt.subplots(2, 3, figsize=(16, 9))
-    axes2 = [[ax.twinx() for ax in row] for row in axes]
-
-    for r, row in enumerate(GRID_ORDER):
-        for c, path_id in enumerate(row):
-            ax = axes[r, c]
-            ax2 = axes2[r][c]
-            _plot_path_subplot(ax, ax2, years, data.path_stress[path_id], path_id)
-            if c == 0:
-                ax.set_ylabel("GW (Dunkelflauten-Mittel)", fontsize=PRINT_FONT_SIZE_ANNOT)
-            if r == 1:
-                ax.set_xlabel("Jahr", fontsize=PRINT_FONT_SIZE_ANNOT)
+    if variant == "mobile":
+        flat_paths = [pid for row in GRID_ORDER for pid in row]
+        fig, axes_list = plt.subplots(6, 1, figsize=figsize_for_variant(variant, (16, 9)))
+        for i, path_id in enumerate(flat_paths):
+            ax = axes_list[i]
+            ax2 = ax.twinx()
+            _plot_path_subplot(ax, ax2, years, data.path_stress[path_id], path_id, lang=lang)
+            ax.set_ylabel(_label("stress.ylabel", lang), fontsize=PRINT_FONT_SIZE_ANNOT)
+            if i == len(flat_paths) - 1:
+                ax.set_xlabel(_label("common.year", lang), fontsize=PRINT_FONT_SIZE_ANNOT)
+        axes = axes_list
+    else:
+        fig, axes = plt.subplots(2, 3, figsize=(16, 9))
+        axes2 = [[ax.twinx() for ax in row] for row in axes]
+        for r, row in enumerate(GRID_ORDER):
+            for c, path_id in enumerate(row):
+                ax = axes[r, c]
+                ax2 = axes2[r][c]
+                _plot_path_subplot(ax, ax2, years, data.path_stress[path_id], path_id, lang=lang)
+                if c == 0:
+                    ax.set_ylabel(_label("stress.ylabel", lang), fontsize=PRINT_FONT_SIZE_ANNOT)
+                if r == 1:
+                    ax.set_xlabel(_label("common.year", lang), fontsize=PRINT_FONT_SIZE_ANNOT)
 
     seen: set[str] = set()
     legend_h: list = []
@@ -382,17 +421,28 @@ def render_stress_rampup_grid(
                 legend_h.append(h)
                 legend_l.append(lbl)
     legend_h.append(mpatches.Patch(facecolor="none", edgecolor="red", hatch="///"))
-    legend_l.append("Defizit")
+    legend_l.append(_label("common.deficit_legend", lang))
 
-    fig.legend(
-        legend_h,
-        legend_l,
-        loc="lower center",
-        bbox_to_anchor=(0.5, -0.02),
-        ncol=6,
-        fontsize=PRINT_FONT_SIZE_LEGEND,
-        frameon=False,
-    )
+    if variant == "mobile":
+        fig.legend(
+            legend_h,
+            legend_l,
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.005),
+            ncol=3,
+            fontsize=PRINT_FONT_SIZE_LEGEND + 2,
+            frameon=False,
+        )
+    else:
+        fig.legend(
+            legend_h,
+            legend_l,
+            loc="lower center",
+            bbox_to_anchor=(0.5, -0.02),
+            ncol=6,
+            fontsize=PRINT_FONT_SIZE_LEGEND,
+            frameon=False,
+        )
 
     if variant == "standalone" and title:
         fig.suptitle(title, fontsize=16, fontweight="bold", y=0.995)
@@ -404,9 +454,17 @@ def render_stress_rampup_grid(
 
         add_brand_footer(fig, brand)
 
-    plt.tight_layout(rect=(0, 0.06, 1, 0.96 if variant == "standalone" and title else 1.0))
+    if variant == "mobile":
+        plt.tight_layout(rect=(0, 0.08, 1, 1.0), h_pad=2.5)
+    else:
+        plt.tight_layout(rect=(0, 0.06, 1, 0.96 if variant == "standalone" and title else 1.0))
     add_oss_footer(fig)
 
+    if return_fig:
+        return fig
+
+    if out_path is None:
+        raise ValueError("out_path must be set when return_fig=False")
     out_path = Path(out_path)
     dpi = dpi_for_variant(variant)
     if variant == "web":
@@ -418,3 +476,4 @@ def render_stress_rampup_grid(
             out_path = out_path.with_suffix(".png")
         fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
+    return None

@@ -1,198 +1,235 @@
-# Bridge-Phase-Parameter — Quellen-Dokumentation
+# Bridge-phase parameters — source documentation
 
-**Zweck:** Belegt die zentralen Time-Path-Parameter der Bridge-Phase
-(Kohle-Auslauf, Erdgas-Bestand, h2-ready-Capacity, H₂-Brennstoff-
-Verfügbarkeit) mit Quelle, Datum, Klassen-Einordnung und
-Lager-Bandbreite. Ergänzt `docs/SOURCES.md`.
+**Purpose:** documents the central time-path parameters of the bridge
+phase (coal phase-out, gas existing fleet, H2-ready capacity, H₂ fuel
+availability) with source, date, source class, and camp range.
+Complements `docs/SOURCES.md`.
 
-Bridge-Phase im Modell: 2026 bis `BRIDGE_PHASE_BIS_JAHR = 2046`
-(siehe `core/path_sensitivity.py`). Die Bridge-Phase endet im
-neutral_default-Lager mit der KKW-EPR-IBN 2046; in den anderen
-Lagern verschiebt sich die De-facto-Bridge entsprechend (atom_opt
-bis 2036, ee_opt bis 2050).
+The bridge phase in the model: 2026 to `BRIDGE_PHASE_BIS_JAHR = 2046`
+(see `core/path_sensitivity.py`). The bridge phase ends in the
+`neutral_default` camp at nuclear EPR IBN 2046; in the other camps
+the de-facto bridge shifts accordingly (atom_opt to 2036, ee_opt to
+2050).
 
 ---
 
-## Parameter 1 — Kohle-Bestand 2026
+## Parameter 1 — Coal existing fleet 2026
 
-**Code:** `TimePathParams.kohle_bestand_capacity(year=2026)` = 33,0 GW
+**Code:** `TimePathParams.kohle_bestand_capacity(year=2026)` = 33.0 GW
 
-| Aspekt | Wert |
+| Aspect | Value |
 |---|---|
-| **Default-Wert** | 33 GW (16 Steinkohle + 17 Braunkohle) |
-| **Quelle** | BNetzA-Monitoring 2024, Tag `BNETZA-MONITORING-2024` |
+| **Default value** | 33 GW (16 hard coal + 17 lignite) |
+| **Source** | BNetzA Monitoring 2024, tag `BNETZA-MONITORING-2024` |
 | **URL** | https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/start.html |
-| **Klasse** | **A** (offizielle Behörde) |
-| **Verifikation** | "rund 56,5 Gigawatt an konventionellen Kraftwerken übrig" inkl. Erdgas; davon ~33 GW Stein-+Braunkohle |
+| **Class** | **A** (official authority) |
+| **Verification** | "around 56.5 GW of conventional plants remain" incl. natural gas; of which ~33 GW hard + brown coal |
 
-**Lager-Spannung:** Keine. Wert ist gesetzliche Bestandsfestschreibung.
+**Camp spread:** none. The value is a legal stocktake.
 
 ---
 
-## Parameter 2 — WEITER-SO Kohle-Ausstiegsjahr
+## Parameter 2 — WEITER-SO coal exit year
 
-**Code:** `weiterso_kohle_ausstieg_endjahr` (in C.1 implizit über Stützstellen)
+**Code:** `weiterso_kohle_ausstieg_endjahr` (implicit in C.1 via knot points)
 
-| Aspekt | Wert |
+| Aspect | Value |
 |---|---|
-| **Default-Wert** | 2038 |
-| **Quelle (juristisch)** | Kohleverstromungsbeendigungsgesetz (KVBG) §4, BGBl. I 2020 S. 1818, Tag `KVBG-2020` |
+| **Default value** | 2038 |
+| **Source (legal)** | Kohleverstromungsbeendigungsgesetz (KVBG) §4, BGBl. I 2020 p. 1818, tag `KVBG-2020` |
 | **URL** | https://www.gesetze-im-internet.de/kvbg/ |
-| **Klasse** | **A** (Bundesgesetz) |
-| **Verbatim-Beleg** | KVBG §4: "spätestens bis zum 31.12.2038 vollständig abgebaut" |
-| **Zwischenziele** | 30 GW (2022), 17 GW (2030: 8 Steinkohle + 9 Braunkohle), 0 GW (2038) |
+| **Class** | **A** (federal law) |
+| **Verbatim evidence** | KVBG §4: "fully dismantled at the latest by 2038-12-31" |
+| **Intermediate targets** | 30 GW (2022), 17 GW (2030: 8 hard + 9 lignite), 0 GW (2038) |
 
-**Lager-Bandbreite:**
+**Camp range:**
 
-| Lager | Wert | Begründung | Quelle |
+| Camp | Value | Rationale | Source |
 |---|---|---|---|
-| **EE-optimistisch** | 2035 | KVBG §54 sieht Revisions-Prüfungen 2026/2029/2032 vor — "wenn möglich schon 2035 zu beenden" (Bund-Länder-Einigung Januar 2020) | Wikipedia: Kohleausstiegs-Eintrag, Hinweis auf Kohlekommission-Empfehlung 2019 |
-| **Neutral** | 2038 | KVBG-Endjahr | KVBG §4 |
-| **Status-quo-pessimistisch** | 2042+ | Aufweichung möglich, wenn Versorgungssicherheits-Klausel KVBG §54 greift; Datteln 4 ging 2020 ans Netz und soll erst 2038 schließen → Präzedenz für Härtefall-Verlängerungen | energiezukunft.eu zum Fahrplan, Ersatzkraftwerkebereithaltungsgesetz 2022 als Präzedenz für Reaktivierungen |
+| **EE-optimistic** | 2035 | KVBG §54 envisages review checkpoints 2026/2029/2032 — "to end as early as 2035 if possible" (federal-state agreement January 2020) | Wikipedia: coal-phase-out entry, note on Kohlekommission recommendation 2019 |
+| **Neutral** | 2038 | KVBG end year | KVBG §4 |
+| **Status-quo-pessimistic** | 2042+ | A softening is possible if the security-of-supply clause KVBG §54 takes effect; Datteln 4 came online in 2020 and is only set to close in 2038 → precedent for hardship-case extensions | energiezukunft.eu on the roadmap, Ersatzkraftwerkebereithaltungsgesetz 2022 as precedent for reactivations |
 
-**Methodischer Streitpunkt:** Der Wert 2042 ist *nicht* gesetzlich abgedeckt — er wäre eine Aufweichung. Methodisch sauber wäre, das im Modell als "Sensitivität: KVBG-Aufweichung" zu kennzeichnen, nicht als Atom-Lager-Position. Atom-Lager hat bei Kohle keine eigenständige Position (will sowieso KKW statt Kohle).
+**Methodological friction point:** the value 2042 is *not* covered by
+law — it would be a softening. Methodologically the cleanest framing
+would be to label this in the model as a "sensitivity: KVBG softening"
+rather than as an atom-camp position. The atom camp has no independent
+position on coal (wants nuclear instead of coal anyway).
 
 ---
 
-## Parameter 3 — Pfad-Kohle-Ausstiegsjahr (alle vier Nicht-WEITER-SO-Pfade)
+## Parameter 3 — Path coal exit year (all four non-WEITER-SO paths)
 
-**Code:** `TimePathParams.kohle_bestand_capacity(year, weiterso=False)` mit Stützstellen `{2026: 33, 2030: 0}`
+**Code:** `TimePathParams.kohle_bestand_capacity(year, weiterso=False)`
+with knot points `{2026: 33, 2030: 0}`
 
-| Aspekt | Wert |
+| Aspect | Value |
 |---|---|
-| **Default-Wert** | 2030 (linear ausgelaufen 2026→2030) |
-| **Quelle 1 (politisch)** | Koalitionsvertrag SPD/Grüne/FDP 2021, Pkt. "Klima, Energie, Transformation": "Kohleausstieg idealerweise auf 2030 vorziehen" |
-| **Quelle 2 (vertraglich)** | Verständigung BMWK + NRW + RWE Oktober 2022, vorgezogener Kohleausstieg 2030 im Rheinischen Revier; per Gesetz 1.12.2022 (Bundestag-Drucksache 20/4300) |
+| **Default value** | 2030 (linear phase-out 2026→2030) |
+| **Source 1 (political)** | Coalition agreement SPD/Grüne/FDP 2021, point "climate, energy, transformation": "bring forward coal phase-out ideally to 2030" |
+| **Source 2 (contractual)** | Agreement BMWK + NRW + RWE October 2022, brought-forward coal phase-out 2030 in Rhenish lignite region; by law 2022-12-01 (Bundestag printed paper 20/4300) |
 | **URL** | https://www.bundestag.de/dokumente/textarchiv/2022/kw48-de-braunkohleausstieg-923096 |
-| **Klasse** | **A** (Bundesgesetz für Rheinisches Revier) + **B** (politische Absicht für andere Reviere) |
+| **Class** | **A** (federal law for Rhenish region) + **B** (political intent for other regions) |
 
-**Stilllegungs-Vorlauf:**
-- **Mindest-Vorlauf 30 Monate** für ordnungsrechtliche Anordnung (BNetzA), plus 12 Monate Wartefrist nach Stilllegungsanzeige
-- **Empirie**: Seit 2011 wurden 41,73 GW konventionelle Kapazität stillgelegt — durchschnittlich 3 GW/Jahr. Der lineare Auslauf 33→0 GW über 4 Jahre = 8 GW/Jahr ist also **schneller als die historische Rate**, aber nicht unrealistisch (in Krisenjahren wie 2024 wurden 4,4 GW in einem Schritt stillgelegt).
+**Decommissioning lead time:**
+- **Minimum 30 months lead time** for an ordinance-based shutdown
+  (BNetzA), plus a 12-month waiting period after the shutdown notice
+- **Empirics**: since 2011, 41.73 GW of conventional capacity have
+  been shut down — about 3 GW/year on average. The linear phase-out
+  33→0 GW over 4 years = 8 GW/year is therefore **faster than the
+  historical rate**, but not unrealistic (in crisis years like 2024,
+  4.4 GW were shut down in one step).
 
-**Lager-Bandbreite:**
+**Camp range:**
 
-| Lager | Wert | Begründung |
+| Camp | Value | Rationale |
 |---|---|---|
-| **EE-optimistisch** | 2030 | Koalitionsvertrag 2021, RWE-Vertrag 2022 |
-| **Neutral** | 2032 | Realistische Verzögerung gegenüber Ziel 2030 |
-| **Status-quo-pessimistisch** | 2034 | Tagebau-Rekultivierung und Personalfragen verzögern |
+| **EE-optimistic** | 2030 | Coalition agreement 2021, RWE contract 2022 |
+| **Neutral** | 2032 | Realistic delay relative to the 2030 target |
+| **Status-quo-pessimistic** | 2034 | Open-pit recultivation and personnel issues delay |
 
-**Methodischer Streitpunkt:** Brauchen wir den Pfad-Wert getrennt von WEITER-SO? Begründung ja: WEITER-SO ist ein definitorisch passiver Pfad (Status-quo-Lager), die anderen vier sind aktive Pfade. EE/KKW-Pfade *wollen* Kohle weghaben — Atom-Lager genauso wie EE-Lager. Daher gemeinsamer Wert für alle vier Nicht-WEITER-SO-Pfade.
-
----
-
-## Parameter 4 — Erdgas-Bestand 2026 und Stilllegungs-Pfad
-
-**Code:** `TimePathParams.gas_bestand_capacity(year)` mit Stützstellen `{2026: 31, 2030: 30, 2035: 28, 2040: 25, 2045: 22, 2050: 18}`
-
-| Aspekt | Wert |
-|---|---|
-| **2026: 31 GW** | BNetzA-Monitoring 2024, Tag `BNETZA-MONITORING-2024` |
-| **Klasse** | **A** (Bundesnetzagentur) |
-| **Verifikation** | Aus 56,5 GW Gesamtkonventionell minus 33 GW Kohle = ~23,5 GW Erdgas im Bestand. Plus Reserve-Kraftwerke aus Ersatzkraftwerkebereithaltungsgesetz 2022 (~7 GW reaktiviert) → 30-31 GW konsistent |
-
-**Stilllegungs-Trajektorie 2050: 18 GW**
-
-Begründung der linearen Auslauf-Annahme: Bestand wird durch Alters-Stilllegung sukzessive reduziert. Mittlere Lebensdauer Gaskraftwerke ~30-40 Jahre, Bestand größtenteils Baujahre 1990-2010. Bis 2050 sind die ältesten Anlagen >50 Jahre alt, müssen ersetzt werden. Auslaufkurve folgt empirischer Stilllegungs-Logik der BNetzA-Kraftwerksliste.
-
-**Methodischer Streitpunkt:** Diese Zahlen sind **nicht aus einer
-einzelnen Quelle**, sondern eine plausible Modell-Annahme. Sie sind als
-`[ASSUMPTION: Modell-Setzung, abgeleitet aus Bestands-Alter und
-mittlerer Lebensdauer]` markiert, nicht als hartes Quellen-Datum.
-Klasse-B-Quellen wie ISE-Kraftwerksanalyse oder DLR-System-Studien
-würden den linearen Auslauf qualitativ stützen; eine Studie mit genau
-diesem 31→18-GW-Pfad ist nicht bekannt.
-
-**Lager-Bandbreite:** Keine — Bestand ist eine politisch unkontroverse Größe.
+**Methodological friction point:** do we need the path value separate
+from WEITER-SO? Yes: WEITER-SO is a definitionally passive path
+(status-quo camp); the other four are active paths. EE/KKW paths *want*
+coal gone — the atom camp just like the EE camp. Hence a shared value
+for all four non-WEITER-SO paths.
 
 ---
 
-## Parameter 5 — H2-ready GuD-Neubau
+## Parameter 4 — Natural-gas existing fleet 2026 and decommissioning path
 
-**Code:** `TimePathParams.h2ready_capacity(year)` mit Stützstellen `{2026: 0, 2030: 6, 2035: 12, 2040: 16, 2045: 20, 2050: 22}`
+**Code:** `TimePathParams.gas_bestand_capacity(year)` with knot points
+`{2026: 31, 2030: 30, 2035: 28, 2040: 25, 2045: 22, 2050: 18}`
 
-| Aspekt | Wert |
+| Aspect | Value |
 |---|---|
-| **2034: 12 GW** | Kraftwerksstrategie 2026, BMWE Eckpunktepapier Januar 2026, Tag `BMWE-KWBG-2026` |
-| **Klasse** | **A** (Bundesregierung) |
-| **Verbatim-Beleg** | Kraftwerksstrategie 2026: 24 moderne GuD-Kraftwerke à 500 MW, erste Inbetriebnahme 2030, letzte 2034 |
+| **2026: 31 GW** | BNetzA Monitoring 2024, tag `BNETZA-MONITORING-2024` |
+| **Class** | **A** (Federal Network Agency) |
+| **Verification** | From 56.5 GW total conventional minus 33 GW coal = ~23.5 GW gas in the existing fleet. Plus reserve plants from Ersatzkraftwerkebereithaltungsgesetz 2022 (~7 GW reactivated) → 30-31 GW consistent |
 
-**2030: 6 GW (Realismus-Abschlag)**
+**Decommissioning trajectory 2050: 18 GW**
 
-Begründung: Vom Plan 12 GW über vier Jahre 2030-2034 würde linear 3 GW/Jahr bedeuten, also 3 GW (2031), 6 GW (2032)... Die 6 GW in 2030 sind eine **optimistische Lesart** — sie unterstellen, dass die ersten 12 Ausschreibungs-Lose schnell zugelaufen sind. Realistisch könnte 2030 auch erst 3-4 GW stehen.
+Rationale for the linear phase-out assumption: the fleet is reduced
+successively by age-related decommissioning. Mean service life of gas
+plants ~30-40 years; the fleet is largely vintage 1990-2010. By 2050
+the oldest plants are >50 years old and must be replaced. The phase-out
+curve follows the empirical decommissioning logic of the BNetzA plant
+list.
 
-**Lager-Bandbreite:**
+**Methodological friction point:** these numbers are **not from a
+single source** but a plausible model assumption. They are flagged as
+`[ASSUMPTION: model choice, derived from fleet age and mean service
+life]`, not as a hard sourced figure. Class-B sources such as ISE
+power-plant analyses or DLR system studies would qualitatively support
+the linear phase-out; a study with exactly this 31→18 GW path is not
+known.
 
-| Lager | 2030 | 2035 | Begründung |
+**Camp range:** none — the existing fleet is a politically
+uncontroversial quantity.
+
+---
+
+## Parameter 5 — H2-ready CCGT new-build
+
+**Code:** `TimePathParams.h2ready_capacity(year)` with knot points
+`{2026: 0, 2030: 6, 2035: 12, 2040: 16, 2045: 20, 2050: 22}`
+
+| Aspect | Value |
+|---|---|
+| **2034: 12 GW** | Kraftwerksstrategie 2026, BMWE Eckpunktepapier January 2026, tag `BMWE-KWBG-2026` |
+| **Class** | **A** (federal government) |
+| **Verbatim evidence** | Kraftwerksstrategie 2026: 24 modern CCGT plants at 500 MW each, first IBN 2030, last 2034 |
+
+**2030: 6 GW (realism discount)**
+
+Rationale: from the plan of 12 GW over four years 2030-2034 a linear
+ramp would mean 3 GW/year, i.e. 3 GW (2031), 6 GW (2032)… The 6 GW in
+2030 is an **optimistic reading** — it assumes that the first 12
+tender lots completed quickly. Realistically, 2030 could see only
+3-4 GW.
+
+**Camp range:**
+
+| Camp | 2030 | 2035 | Rationale |
 |---|---|---|---|
-| **EE-optimistisch** | 8 GW | 14 GW | KWBG voll und planmäßig zugelaufen |
-| **Neutral** | 6 GW | 12 GW | Plan-Wert mit moderatem Abschlag |
-| **Skeptisch** | 3 GW | 8 GW | Genehmigungs-Verzögerungen, Lieferkette, Fachkräftemangel |
+| **EE-optimistic** | 8 GW | 14 GW | KWBG fully and on-schedule |
+| **Neutral** | 6 GW | 12 GW | plan value with moderate discount |
+| **Sceptical** | 3 GW | 8 GW | permitting delays, supply chain, skills shortage |
 
-**Methodischer Streitpunkt:** Die KWBG-Eckpunkte sind politische Absichtserklärung, kein Rechtsstand. Ausschreibungen laufen erst an. Realistisch ist Verzögerung wahrscheinlich.
+**Methodological friction point:** the KWBG cornerstones are a
+political intent statement, not the state of the law. Tenders are
+only now starting. Delays are realistically likely.
 
 ---
 
-## Parameter 6 — H2-Brennstoff-Verfügbarkeit
+## Parameter 6 — H2 fuel availability
 
-**Code:** `TimePathParams.h2_brennstoff_capacity(year)` mit Stützstellen `{2026: 0,5, 2030: 3, 2035: 10, 2040: 20, 2045: 30, 2050: 40}`
+**Code:** `TimePathParams.h2_brennstoff_capacity(year)` with knot
+points `{2026: 0.5, 2030: 3, 2035: 10, 2040: 20, 2045: 30, 2050: 40}`
 
-| Aspekt | Wert |
+| Aspect | Value |
 |---|---|
-| **2030: 3 GW backup-fähig** | Nationale Wasserstoff-Strategie Update 2023, Tag `NWS-2023` |
-| **Klasse** | **B** (Forschungsinstitute mit Bundesregierung-Auftrag) — BMWK ist Klasse A, aber NWS ist Strategie-Papier, nicht Gesetz |
-| **Verbatim-Beleg NWS-2023** | "Elektrolyse 5 GW bis 2030, 10 GW bis 2035" |
+| **2030: 3 GW backup-capable** | Nationale Wasserstoff-Strategie Update 2023, tag `NWS-2023` |
+| **Class** | **B** (research institutes with federal mandate) — BMWK is class A, but the NWS is a strategy paper, not law |
+| **Verbatim evidence NWS-2023** | "Electrolysis 5 GW by 2030, 10 GW by 2035" |
 
-**Berechnungs-Logik 2030: 3 GW von 5 GW Elektrolyse**
+**Calculation logic 2030: 3 GW from 5 GW electrolysis**
 
-Pro 1 GW H2-Kraftwerk in 240 h Volllast (10 Tage) bei 55-58 % Wirkungsgrad: ~0,4 TWh H2-Reserve. 5 GW Elektrolyse erzeugen jährlich ~30 TWh H2 — davon Industrie-Konkurrenz (Stahl, Chemie, Mobilität ziehen prioritär). Backup-fähiger Anteil ~60 % der Gesamtmenge → 18 TWh / Jahr → reicht für ~3 GW Backup-Leistung in 240 h.
+Per 1 GW H2 plant operated at full load for 240 h (10 days) at
+55-58 % efficiency: ~0.4 TWh H2 reserve. 5 GW electrolysis produce
+~30 TWh H2 per year — of which industry competition (steel, chemicals,
+mobility consume preferentially). Backup-capable share ~60 % of total
+→ 18 TWh / year → enough for ~3 GW backup capacity over 240 h.
 
-**Lager-Bandbreite:**
+**Camp range:**
 
-| Lager | 2030 | 2035 | 2045 | Begründung |
+| Camp | 2030 | 2035 | 2045 | Rationale |
 |---|---|---|---|---|
-| **EE-optimistisch** | 5 GW | 15 GW | 40 GW | NWS-2023-Plan ehrgeizig, Importe schnell |
-| **Neutral** | 3 GW | 10 GW | 30 GW | NWS abzgl. Industrie-Konkurrenz |
-| **Atom-/Status-quo-skeptisch** | 1 GW | 5 GW | 15 GW | Importe verzögern, Kavernen nicht da, Industrie zieht alles |
+| **EE-optimistic** | 5 GW | 15 GW | 40 GW | NWS-2023 plan ambitious, imports quick |
+| **Neutral** | 3 GW | 10 GW | 30 GW | NWS minus industry competition |
+| **Atom-/status-quo-sceptical** | 1 GW | 5 GW | 15 GW | Imports delayed, caverns absent, industry takes everything |
 
-**Quelle für Skepsis (Atom-Lager):** "Wir setzen auf eine Wasserstoff-Monokultur statt auf einen Technologie-Mix" — Tech for Future, Pro-CCS-Position; Heise/heise.de zur SMC-Befragung 2023 mit Ruprecht/Thess-Skepsis. Klasse **D** (Lager-nahe Stimmen), aber argumentationskonsistent.
+**Source for the scepticism (atom camp):** "We're betting on a
+hydrogen monoculture instead of a technology mix" — Tech for Future,
+pro-CCS position; heise.de on the SMC survey 2023 with Ruprecht/Thess
+scepticism. Class **D** (camp-adjacent voices), but argumentatively
+consistent.
 
 ---
 
-## Parameter 7 — H2-Brennstoff-Aufteilung EE-H2 / KKW-H2
+## Parameter 7 — H2 fuel split EE-H2 / KKW-H2
 
 **Code:** `H2_FUEL_SHARE = {"EE-H2": 0.5, "KKW-H2": 0.5}`
 
-| Aspekt | Wert |
+| Aspect | Value |
 |---|---|
-| **Default** | 0,5 / 0,5 (hälftige Aufteilung) |
-| **Klasse** | methodische Modell-Setzung (`[ASSUMPTION]`-Tag) |
+| **Default** | 0.5 / 0.5 (half-half split) |
+| **Class** | methodological model choice (`[ASSUMPTION]` tag) |
 
-**Begründung:** Beide Pfade haben identische Bridge-Architektur und in
-der Bridge-Phase identischen H2-Bedarf. Bis 2042 sind die Werte
-identisch (beide rechnen mit 0,65 EE + 0,35 Backup); danach hat KKW-H2
-strukturell weniger H2-Bedarf, weil KKW Teile der Backup-Last übernimmt.
-Die hälftige Setzung ist bis 2042 exakt und danach leicht zugunsten
-KKW-H2-Sichtbarkeit verzerrt — neutral, in der 30-Jahres-Bilanz
-spannweiten-irrelevant.
+**Rationale:** both paths share an identical bridge architecture and
+an identical H2 demand in the bridge phase. Through 2042 the values
+are identical (both compute 0.65 EE + 0.35 backup); afterwards KKW-H2
+structurally needs less H2 because nuclear takes over part of the
+backup load. The half-half setting is exact through 2042 and
+afterwards slightly biased toward KKW-H2 visibility — neutral, and
+irrelevant in range terms across the 30-year balance.
 
 ---
 
-## Quellen-Klassen-Übersicht
+## Source-class overview
 
-| Parameter | Klasse | Quellen-Tag in [`SOURCES.md`](../SOURCES.md) |
+| Parameter | Class | Source tag in [`SOURCES.md`](../SOURCES.md) |
 |---|---|---|
-| Kohle-Bestand 2026 | A (gesetzlich/behördlich) | `KVBG-2020`, `BNETZA-MONITORING-2024` |
-| WEITER-SO-Ausstieg | A (gesetzlich) | `KVBG-2020`, `RWE-VERTRAG-2022` |
-| Pfad-Ausstieg | A+B (Pfad-Logik) | `BMWE-KWBG-2026` |
-| Erdgas-Bestand-Trajektorie | B (`[ASSUMPTION]`) | Bestands-Alter und Lebensdauer; konservativ-linear ausmodelliert |
-| H2-ready KWBG | A (gesetzlich) | `BMWE-KWBG-2026` |
-| H2-Brennstoff-Verfügbarkeit | B (`[ASSUMPTION]`) | `NWS-2023`, `H2-IMPORT-2024`, `WASSERSTOFF-KERNNETZ-2024` |
-| H2-Aufteilung 50/50 | `[ASSUMPTION]` (methodisch) | hälftige Neutral-Setzung in der Bridge-Phase |
+| Coal existing fleet 2026 | A (statutory/regulatory) | `KVBG-2020`, `BNETZA-MONITORING-2024` |
+| WEITER-SO exit | A (statutory) | `KVBG-2020`, `RWE-VERTRAG-2022` |
+| Path exit | A+B (path logic) | `BMWE-KWBG-2026` |
+| Gas-fleet trajectory | B (`[ASSUMPTION]`) | fleet age and service life; modeled conservatively-linearly |
+| H2-ready KWBG | A (statutory) | `BMWE-KWBG-2026` |
+| H2 fuel availability | B (`[ASSUMPTION]`) | `NWS-2023`, `H2-IMPORT-2024`, `WASSERSTOFF-KERNNETZ-2024` |
+| H2 split 50/50 | `[ASSUMPTION]` (methodological) | half-half neutral setting in the bridge phase |
 
-Drei Parameter (Erdgas-Auslaufkurve, H2-Verfügbarkeit, H2-Aufteilung
-50/50) sind methodische Modell-Setzungen und tragen den
-`[ASSUMPTION]`-Tag — sie stützen sich auf konsistente Bridge-Logik, nicht
-auf eine spezifische peer-reviewte Studie — die Setzungen sind hier
-offen ausgewiesen, damit sie nachvollziehbar bleiben.
+Three parameters (gas phase-out curve, H2 availability, 50/50 H2
+split) are methodological model choices and carry the `[ASSUMPTION]`
+tag — they rest on consistent bridge logic, not a specific
+peer-reviewed study — the choices are surfaced openly here so they
+remain traceable.

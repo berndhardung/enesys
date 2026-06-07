@@ -1,70 +1,88 @@
-# Modell-Architektur
+# Model architecture
 
-**Zweck.** Architektur-Referenz für enesys. Beschreibt die Schichten, Pfade und Architektur-Entscheidungen, die dem Code zugrunde liegen.
+**Purpose.** Architecture reference for enesys. Describes the layers,
+paths, and architectural decisions underlying the code.
 
-> **Robustheits-Aussagen des Modells.** Sechs zentrale
-> Robustheits-Aussagen tragen das Modell: Forward-Cost-Korridor,
-> Lager-Asymmetrie der Reue (EE vs. KKW), CO₂-Bridge-Mehremissionen,
-> Frist-Härte und KKW-Bauzeit-Empirie, Risiko-/Versicherungs-Logik,
-> Multikriterien-Ranking. Sie sind im Code
+> **The model's robustness claims.** Six central robustness claims
+> carry the model: the forward-cost corridor, the camp asymmetry of
+> regret (EE vs. KKW), CO₂ bridge-phase extra-emissions, deadline
+> rigor and the KKW build-time evidence, the risk/insurance logic,
+> and the multi-criteria ranking. They are operationalized in code
 > (`core/sensitivity.py`, `core/regret_decision_tree.py`,
-> `extensions/multicriteria.py`) und in den Tests (`tests/consistency/`)
-> operationalisiert.
+> `extensions/multicriteria.py`) and in the tests
+> (`tests/consistency/`).
 
-## Inhaltsverzeichnis
+## Table of contents
 
-**Teil A — Architektur**
+**Part A — Architecture**
 
-- [A.0 Architektur-Prinzipien](#a0-architektur-prinzipien)
-- [A.1 Drei-Schichten-Architektur](#a1-drei-schichten-architektur)
-- [A.2 Sechs-Pfade-Architektur](#a2-sechs-pfade-architektur)
-- [A.3 Mengen-Architektur (LCOE-Schicht)](#a3-mengen-architektur-lcoe-schicht)
-- [A.4 Coverage-Architektur (Stresstest-Schicht)](#a4-coverage-architektur-stresstest-schicht)
-- [A.5 Lager-Bandbreiten als Sensitivitäts-Quelle](#a5-lager-bandbreiten-als-sensitivitats-quelle)
-- [A.6 Versorgungs-Schwelle und Doppel-Filter-Methodik](#a6-versorgungs-schwelle-und-doppel-filter-methodik)
-- [A.7 Definitorische Pfad-Kalibrierung](#a7-definitorische-pfad-kalibrierung)
-- [A.8 Code-Modul-Mapping](#a8-code-modul-mapping)
-- [A.10 Sensitivität: Tornado und Monte-Carlo](#a10-sensitivitat-tornado-und-monte-carlo)
-- [A.11 Architektur-Entscheidungen mit Begründung](#a11-architektur-entscheidungen-mit-begrundung)
-- [A.12 Methodische Entscheidungen mit Begründung](#a12-methodische-entscheidungen-mit-begrundung)
-
----
-
-# Teil A — Architektur
-
-## A.0 Architektur-Prinzipien
-
-1. **Lose Kopplung zwischen Schichten.** Die Modell-Schichten (Demand, LCOE/Mengen-Bilanz, Stresstest, Steady State) haben disjunkte Verantwortlichkeiten und kommunizieren über klar definierte Interfaces (Pfad-Definition, Lager-Zugehörigkeit). Direkte GW→TWh-Transformationen quer durch die Schichten werden vermieden.
-
-2. **Eine Single-Source-of-Truth pro Konzept.** Lager-Bandbreiten in `CAMP_RANGES`, Quellen-Tags in `docs/SOURCES.md`, Inventar-Werte in `core/inventories/`. Drift wird durch Architektur-Tests und Source-Trace-Pflicht maschinell verhindert.
-
-3. **Pragma vor Eleganz.** Methodisch saubere Erweiterungen werden zurückgestellt, wenn sie das Komplexitäts-Budget sprengen würden. Die zentralen Robustheits-Aussagen tragen ohne sie.
-
-4. **Definitorische Pfad-Setzung statt Modell-Ableitung.** Die programmatischen Pfade sind kalibriert, nicht modelliert. Das hält die Modell-Komplexität niedrig und macht die Argumentation klarer.
+- [A.0 Architectural principles](#a0-architectural-principles)
+- [A.1 Three-layer architecture](#a1-three-layer-architecture)
+- [A.2 Six-path architecture](#a2-six-path-architecture)
+- [A.3 Quantity architecture (LCOE layer)](#a3-quantity-architecture-lcoe-layer)
+- [A.4 Coverage architecture (stress-test layer)](#a4-coverage-architecture-stress-test-layer)
+- [A.5 Camp ranges as a sensitivity source](#a5-camp-ranges-as-a-sensitivity-source)
+- [A.6 Supply threshold and double-filter methodology](#a6-supply-threshold-and-double-filter-methodology)
+- [A.7 Definitional path calibration](#a7-definitional-path-calibration)
+- [A.8 Code-module mapping](#a8-code-module-mapping)
+- [A.10 Sensitivity: tornado and Monte Carlo](#a10-sensitivity-tornado-and-monte-carlo)
+- [A.11 Architectural decisions with rationale](#a11-architectural-decisions-with-rationale)
+- [A.12 Methodological decisions with rationale](#a12-methodological-decisions-with-rationale)
 
 ---
 
-## A.1 Drei-Schichten-Architektur
+# Part A — Architecture
 
-Das Modell trennt vier methodische Schichten, die je eine eigene Frage beantworten:
+## A.0 Architectural principles
 
-| Schicht | Frage | Modell-Einheit | Zeitauflösung | Code-Heimat |
+1. **Loose coupling between layers.** The model layers (demand,
+   LCOE/quantity balance, stress test, steady state) have disjoint
+   responsibilities and communicate through well-defined interfaces
+   (path definition, camp affiliation). Direct GW→TWh transformations
+   that cut across layers are avoided.
+
+2. **One single source of truth per concept.** Camp ranges in
+   `CAMP_RANGES`, source tags in `docs/SOURCES.md`, inventory values in
+   `core/inventories/`. Drift is prevented mechanically by architecture
+   tests and a source-trace obligation.
+
+3. **Pragma before elegance.** Methodologically clean extensions are
+   deferred when they would blow the complexity budget. The central
+   robustness claims carry without them.
+
+4. **Definitional path setting instead of model derivation.** The
+   programmatic paths are calibrated, not modeled. That keeps model
+   complexity low and the argument clearer.
+
+---
+
+## A.1 Three-layer architecture
+
+The model separates four methodological layers, each answering its own
+question:
+
+| Layer | Question | Model unit | Time resolution | Code home |
 |---|---|---|---|---|
-| **Demand** | Wie viel Strom wird wann gebraucht? | TWh/a, GW peak | jahresgemittelt + Winter-Spitze | `core/demand.py` (aggregierte Schicht) + `core/inventories/demand_curves.py` (Pfad-Trajektorien) |
-| **LCOE / Mengen-Bilanz** | Was kostet der Pfad 2026–2055 pro kWh? | ct/kWh, gemittelt | Jahres-Trajektorie | `core/path_model.py` |
-| **Stresstest** | Reicht die installierte Leistung in der Spitzenstunde? | GW peak | 240-h-Dunkelflaute | `extensions/winter_stress.py` |
-| **Steady State** | Was kostet der Pfad nach Klimaneutralität pro kWh? | ct/kWh | Rolling 30-J ab Start-Jahr | `core/rolling_lcoe.py` (`rolling_lcoe(year=2055)`) |
+| **Demand** | How much electricity is needed, when? | TWh/yr, GW peak | annual-mean + winter peak | `core/demand.py` (aggregate layer) + `core/inventories/demand_curves.py` (path trajectories) |
+| **LCOE / quantity balance** | What does the path cost per kWh 2026–2055? | ct/kWh, averaged | annual trajectory | `core/path_model.py` |
+| **Stress test** | Is the installed capacity enough in the peak hour? | GW peak | 240-h dark-doldrum | `extensions/winter_stress.py` |
+| **Steady state** | What does the path cost per kWh after climate neutrality? | ct/kWh | rolling 30-yr from start year | `core/rolling_lcoe.py` (`rolling_lcoe(year=2055)`) |
 
-**Steady State als Plausibilitäts-Check.** Hauptmetrik ist der kanonische Rolling-30-Jahres-LCOE ab Investment-Start-Jahr (Default 2026). Die Steady-State-Lesart ist derselbe Rolling-Mechanismus mit Start-Jahr 2055 — sie hebt sich dort zur eigenständigen Aussage, wo die Doppel-Filter-Methodik (siehe A.6) sie als zweite Modell-Frage braucht.
+**Steady state as a plausibility check.** The main metric is the
+canonical rolling-30-year LCOE from the investment start year (default
+2026). The steady-state reading is the same rolling mechanism with
+start year 2055 — it becomes a standalone claim where the
+double-filter methodology (see A.6) requires it as a second model
+question.
 
-**Daten- und Aufruf-Fluss zwischen den Schichten:**
+**Data and call flow between layers:**
 
 ```mermaid
 flowchart LR
     subgraph Inputs
-      Tech[Tech-Inventar<br/>capex / wacc / vlh]
-      Fuel[Fuel-Inventar<br/>Preise / CO₂]
-      Camp[CAMP_RANGES<br/>Lager-Bandbreiten]
+      Tech[tech inventory<br/>capex / wacc / vlh]
+      Fuel[fuel inventory<br/>prices / CO₂]
+      Camp[CAMP_RANGES<br/>camp ranges]
       ParamSet[ParamSets<br/>Ariadne-PyPSA ...]
     end
 
@@ -73,344 +91,469 @@ flowchart LR
     Camp --> LCOE
     ParamSet -->|param_overrides| LCOE
 
-    Demand[Demand-Trajektorie<br/>2026–2055] --> LCOE
+    Demand[demand trajectory<br/>2026–2055] --> LCOE
 
-    LCOE[core/path_model<br/>LCOE + Mengen-Bilanz] --> Stress
+    LCOE[core/path_model<br/>LCOE + quantity balance] --> Stress
     LCOE --> SteadyState
     LCOE --> UI
 
-    Stress[winter_stress<br/>240-h-Dunkelflaute] --> UI
-    SteadyState[rolling_lcoe<br/>Rolling 30-J ab Y] --> UI
+    Stress[winter_stress<br/>240-h dark-doldrum] --> UI
+    SteadyState[rolling_lcoe<br/>rolling 30-yr from Y] --> UI
 
     UI[examples/ chart wrappers]
-    LCOE -.Tests.-> Tests[consistency/<br/>+ convergence-Tests]
+    LCOE -.tests.-> Tests[consistency/<br/>+ convergence tests]
 ```
 
-Pfeile: durchgezogen = Daten-/Funktions-Fluss, gestrichelt = Test-Verifikation.
+Arrows: solid = data / function flow, dashed = test verification.
 
 ---
 
-## A.2 Sechs-Pfade-Architektur
+## A.2 Six-path architecture
 
-Sechs alternative politische Szenarien als Vergleichs-Punkte. **Die Pfade sind alternative Szenarien, nicht parallele Welten** — in jedem Szenario existiert nur einer der sechs Pfade.
+Six alternative political scenarios serve as comparison points. **The
+paths are alternative scenarios, not parallel worlds** — in each
+scenario only one of the six paths exists.
 
-| Pfad | Lager | Charakter | Backup-Architektur |
+| Path | Camp | Character | Backup architecture |
 |---|---|---|---|
-| WEITER-SO | Status-quo | gebremster EE-Ausbau, Erdgas dauerhaft | klassisches Erdgas + Kohle bis 2038 |
-| BESTAND | Bestands-Lager | aktives Erdgas-Programm, kein KKW | Erdgas-Bestand + Neubau, KVBG-Kohle bis 2038 |
-| EE-GAS | EE-Lager | 92 % EE + 8 % Erdgas-Bridge | Erdgas-Bestand + H2-ready (auf Gas) |
-| EE-H2 | EE-Lager | 92 % EE + 8 % H2-Backup | Erdgas-Bestand + H2-ready (auf H2 ab Verfügbarkeit) |
-| KKW-GAS | KKW-Lager | 30 % KKW + 59 % EE + 11 % Erdgas | KKW-Grundlast + Erdgas-Bridge |
-| KKW-H2 | KKW-Lager | dito mit H2-Backup | KKW + H2-Bridge |
+| WEITER-SO | status-quo | dampened EE expansion, gas indefinitely | classic natural gas + coal until 2038 |
+| BESTAND | existing-fleet camp | active gas program, no nuclear | existing gas + new build, KVBG coal until 2038 |
+| EE-GAS | EE camp | 92 % EE + 8 % gas bridge | existing gas + H2-ready (on gas) |
+| EE-H2 | EE camp | 92 % EE + 8 % H2 backup | existing gas + H2-ready (on H2 once available) |
+| KKW-GAS | KKW camp | 30 % nuclear + 59 % EE + 11 % gas | nuclear baseload + gas bridge |
+| KKW-H2 | KKW camp | as above with H2 backup | nuclear + H2 bridge |
 
-**Pfad-Symmetrien:**
+**Path symmetries:**
 
-- EE-GAS und EE-H2: identischer EE-Mix (40/30/15/4/3 %), unterschiedliches Backup
-- KKW-GAS und KKW-H2: identischer EE-Anteil (59 %) + Bridge-Backup
-- BESTAND ohne GAS/H2-Aufspaltung (Bestands-Lager-Programm ist auf Erdgas fixiert)
+- EE-GAS and EE-H2: identical EE mix (40/30/15/4/3 %), different backup
+- KKW-GAS and KKW-H2: identical EE share (59 %) + bridge backup
+- BESTAND has no GAS/H2 split (the existing-fleet camp program is
+  fixed on natural gas)
 
-**Lager-Mapping (Schicht 1–2 der Lager-Architektur):**
+**Camp mapping (layers 1–2 of the camp architecture):**
 
-| Lager | Pfade | Referenz-Pfad |
+| Camp | Paths | Reference path |
 |---|---|---|
-| Bestands-Lager | BESTAND | WEITER-SO ist Bestands-ohne-Programm-Erfolg |
-| EE-Lager | EE-GAS, EE-H2 | — |
-| KKW-Lager | KKW-GAS, KKW-H2 | — |
+| Existing-fleet camp | BESTAND | WEITER-SO is "existing fleet without programmatic success" |
+| EE camp | EE-GAS, EE-H2 | — |
+| KKW camp | KKW-GAS, KKW-H2 | — |
 
-WEITER-SO dient als Referenz-Pfad — er beschreibt, was *passiert*, wenn keines der Lager sein politisches Programm umsetzt. Diese Referenz-Beziehung gilt für alle aktiven Pfade symmetrisch.
+WEITER-SO serves as the reference path — it describes what *happens*
+if none of the camps executes its political program. This reference
+relationship holds symmetrically for all active paths.
 
 ---
 
-## A.3 Mengen-Architektur (LCOE-Schicht)
+## A.3 Quantity architecture (LCOE layer)
 
-Das Modell rechnet eine dynamische Mengen-Bilanz pro Pfad-Jahr-Lager-Kombination und aggregiert sie über ein Rolling-Fenster zum kanonischen LCOE.
+The model computes a dynamic quantity balance per path-year-camp
+combination and aggregates it over a rolling window into the canonical
+LCOE.
 
-**Mengen-Bilanz pro Jahr** (`compute_path()` in `core/path_model.py`). Pro Jahr läuft Merit-Order über `path_policy.dispatch_priority`, brennstoff-gebunden durch `fuel_set` + Brennstoff-Caps. Mengen entstehen dynamisch aus Politik (`PolitikSetzung`-Default pro Pfad) × Lager-Belief × Brennstoff-Verfügbarkeit.
+**Quantity balance per year** (`compute_path()` in
+`core/path_model.py`). Each year runs a merit order via
+`path_policy.dispatch_priority`, bound to fuel via `fuel_set` + fuel
+caps. Quantities arise dynamically from policy
+(`PolitikSetzung` default per path) × camp belief × fuel availability.
 
-**Rolling-LCOE** (`rolling_lcoe()` in `core/rolling_lcoe.py`). Aggregiert die jährlichen LCOE-Werte über ein 30-Jahres-Fenster ab beliebigem Start-Jahr — Default 2026 (Pfad-Lebenszyklus), `rolling_lcoe(2055)` als Steady-State-Lesart. Ein fließender Übergang vom Bridge-Pfad in den Steady-State ohne Stützstellen-Diskussion. Pfad-Mix-Aussagen werden parallel aus `PathResult.mix_by_technology` über `core/path_aggregations.py` aggregiert (`snapshot_mix`, `mean_mix`, `steady_state_mix`).
+**Rolling LCOE** (`rolling_lcoe()` in `core/rolling_lcoe.py`).
+Aggregates the annual LCOE values over a 30-year window from any start
+year — default 2026 (path life cycle), `rolling_lcoe(2055)` as the
+steady-state reading. A smooth transition from the bridge path into
+steady state without a knot-point discussion. Path-mix statements are
+aggregated in parallel from `PathResult.mix_by_technology` via
+`core/path_aggregations.py` (`snapshot_mix`, `mean_mix`,
+`steady_state_mix`).
 
-Die Mengen-Anteile pro Pfad sind nicht hartcodiert — sie ergeben sich aus dem Merit-Order-Dispatch:
+The quantity shares per path are not hard-coded — they arise from the
+merit-order dispatch:
 
 ```
 EE-GAS / EE-H2:
-  PV 40 % + Wind onshore 30 % + Wind offshore 15 %
-  + Biomasse 4 % + Hydro 3 % + Backup 8 % = 100 %
+  PV 40 % + wind onshore 30 % + wind offshore 15 %
+  + biomass 4 % + hydro 3 % + backup 8 % = 100 %
 
 KKW-GAS / KKW-H2:
-  PV 25 % + Wind onshore 18 % + Wind offshore 10 %
-  + Biomasse 3 % + Hydro 3 % + (KKW + Bridge) 35 % + H2-Sekundär 6 % = 100 %
+  PV 25 % + wind onshore 18 % + wind offshore 10 %
+  + biomass 3 % + hydro 3 % + (nuclear + bridge) 35 % + H2-secondary 6 % = 100 %
 
-BESTAND: EE-Anteil + Erdgas-Anteil dynamisch (16 % → 50 % bis 2055)
-WEITER-SO: gebremster EE-Mix × ee_share_weiterso + Kohle + Gas + Importe
+BESTAND: EE share + natural-gas share dynamic (16 % → 50 % by 2055)
+WEITER-SO: dampened EE mix × ee_share_weiterso + coal + gas + imports
 ```
 
-**Methodischer Status:**
+**Methodological status:**
 
-1. **Die Mix-Anteile sind politische Setzung im Code**, keine ökonomische Optimierung. Insbesondere ist die 8 %-Backup-Quote in EE-Pfaden ein Programm-Commitment des EE-Lagers (in `PolitikSetzung` und `dispatch_priority` verankert), nicht das Modell-Ergebnis einer Kostenminimierung.
+1. **The mix shares are a political choice in code**, not an economic
+   optimization. In particular, the 8 % backup quota in EE paths is a
+   programmatic commitment of the EE camp (anchored in `PolitikSetzung`
+   and `dispatch_priority`), not the model's cost-minimization result.
 
-2. **Die Mengen-Bilanz ist Politik-konsistent.**
-   `nep_realization_rate`, `nuclear_realization_rate` und
-   `h2_realization_rate` (in `PolitikSetzung`) skalieren die installierte
-   Tech-Kapazität pro Jahr; weniger Kapazität → weniger Dispatch →
-   mehr Brennstoff-Backup → höhere LCOE auf dem betroffenen Pfad. Die
-   effektive Realisierung läuft durch den **Min-Operator** mit dem
-   Lager-Welt-Belief (`CAMP_NEP_WORLD_BELIEF` etc. in
-   `core/realization_belief.py`): die pessimistischere der beiden
-   Setzungen — Politik-Wunsch vs. Welt-Belief des Lagers — wirkt. Damit
-   drosselt ein NEP-skeptisches Lager die EE-Politik auch in EE-Pfaden.
+2. **The quantity balance is policy-consistent.**
+   `nep_realization_rate`, `nuclear_realization_rate`, and
+   `h2_realization_rate` (in `PolitikSetzung`) scale the installed tech
+   capacity per year; less capacity → less dispatch → more fuel backup
+   → higher LCOE on the affected path. Effective realization runs
+   through the **min operator** with the camp's world belief
+   (`CAMP_NEP_WORLD_BELIEF` etc. in `core/realization_belief.py`): the
+   more pessimistic of the two settings — policy wish vs. camp world
+   belief — wins. So a NEP-sceptical camp throttles EE policy even in
+   EE paths.
 
-3. **WEITER-SO und BESTAND haben strukturell deutlich mehr Backup.** WEITER-SO durchgehend ~50 %, BESTAND wachsend von 26 % auf 60 %. Die Asymmetrie zwischen aktiven Pfaden (8 %) und den fossil-dominanten Referenz-/Bestands-Pfaden (>50 %) ist Teil der Pfad-Definition (siehe A.7).
+3. **WEITER-SO and BESTAND have structurally much more backup.**
+   WEITER-SO ~50 % throughout, BESTAND growing from 26 % to 60 %. The
+   asymmetry between active paths (8 %) and the fossil-dominant
+   reference / existing-fleet paths (>50 %) is part of the path
+   definition (see A.7).
 
 ---
 
-## A.4 Coverage-Architektur (Stresstest-Schicht)
+## A.4 Coverage architecture (stress-test layer)
 
-Pro Pfad eine Coverage-Kaskade mit asymmetrischer Logik (`extensions/winter_stress.py`):
+A coverage cascade per path with asymmetric logic
+(`extensions/winter_stress.py`):
 
 ```
-EE-GAS (Beispiel):
-  Batterien (gemittelt)         = bat_avg_ee_gas             (Cap-direkt)
-  Gas-Backup                    = min(cap, residual - bat)   (Kaskade)
-  Importe                       = min(8 GW, residual - bat - gas)  (Kaskade)
-  Biomasse-Flex                 = 5,0 GW                     (additiv, immer)
-  DSM                           = min(15,0, residual × 0,10) (unabhängig)
+EE-GAS (example):
+  Batteries (averaged)            = bat_avg_ee_gas             (cap-direct)
+  Gas backup                      = min(cap, residual - bat)   (cascade)
+  Imports                         = min(8 GW, residual - bat - gas)  (cascade)
+  Biomass flex                    = 5.0 GW                     (additive, always)
+  DSM                             = min(15.0, residual × 0.10) (independent)
 ```
 
-Die Coverage rechnet für den Stresstest, was im Worst-Case zur Verfügung steht — nicht das ökonomische Optimum. Diese Unterscheidung gegen die LCOE-Schicht ist bewusst (lose Kopplung nach A.0): der Stresstest darf zusätzliche Reserven ziehen, die im LCOE-Mittel nicht honoriert werden.
+The coverage computes what is available in the worst case for the
+stress test — not the economic optimum. The distinction from the LCOE
+layer is deliberate (loose coupling per A.0): the stress test may draw
+on extra reserves that are not credited in the LCOE mean.
 
 ---
 
-## A.5 Lager-Bandbreiten als Sensitivitäts-Quelle
+## A.5 Camp ranges as a sensitivity source
 
-`core/camp_ranges.py` enthält die zentrale Lager-Bandbreitentabelle `CAMP_RANGES` mit **fünf Lager-Spalten:** `neutral_default`, `ee_optimistic`, `atom_optimistic`, `bestand_optimistic`, `weiterso_optimistic`. Das Bestand-Lager ist eine eigene Position, nicht identisch mit dem KKW-Lager.
+`core/camp_ranges.py` contains the central camp-range table
+`CAMP_RANGES` with **five camp columns:** `neutral_default`,
+`ee_optimistic`, `atom_optimistic`, `bestand_optimistic`,
+`weiterso_optimistic`. The existing-fleet camp is its own position —
+it is not identical to the KKW camp.
 
-**Wahrheit:** `src/enesys/core/camp_ranges.py` ist die Single Source — Quellen-Tags pro Parameter, Verteilungs-Annahme pro Hebel, vollständige Liste aller Parameter. Architektur-Tests im Pfad `tests/architecture/` prüfen Naming-Konvention und Vollständigkeit.
+**Source of truth:** `src/enesys/core/camp_ranges.py` is the single
+source — source tags per parameter, distributional assumption per
+lever, full list of all parameters. Architecture tests in
+`tests/architecture/` check the naming convention and completeness.
 
-**Größenordnung der Spreizung (illustrativ — aktuelle Werte sind im Code, nicht hier):**
+**Spread order of magnitude (illustrative — current values live in the
+code, not here):**
 
-| Parameter-Klasse | Typische Spreizung |
+| Parameter class | Typical spread |
 |---|---|
-| `pv_lcoe` (PV-Stromgestehungskosten ct/kWh) | EE-Lager unter Lit-Untergrenze, KKW-Lager über Lit-Obergrenze |
-| `nuclear_lcoe` (KKW-Stromgestehungskosten ct/kWh) | EE-Lager an HPC-/Flamanville-Realität, KKW-Lager an Plan-LCOE neuer EPR |
-| `co2_price_eur_t_2030` | Bestands-Lager niedrig, EE-Lager hoch (»aggressivere Klimapolitik«) |
-| `nuclear_full_load_hours` | EE-Lager niedriger (EE-System drosselt KKW), Atom-Lager privilegiert |
+| `pv_lcoe` (PV generation cost ct/kWh) | EE camp below literature lower bound, KKW camp above literature upper bound |
+| `nuclear_lcoe` (nuclear generation cost ct/kWh) | EE camp at HPC/Flamanville reality, KKW camp at planned LCOE for new EPR |
+| `co2_price_eur_t_2030` | existing-fleet camp low, EE camp high (»more aggressive climate policy«) |
+| `nuclear_full_load_hours` | EE camp lower (EE system throttles nuclear), atom camp privileged |
 
-**Naming-Konvention für Parameter:** sprechende Suffixe (`_lcoe`, `_lcos`, `_full_load_hours`, `_eur_t` mit Jahres-Anker, `_capex_eur_kw`, `_opex_eur_kw_year`, `_lifetime`, `_vlh`, `_share`, `_gw` / `_twh`). Bestehende Code-Namen werden nicht rückwirkend umbenannt; ein Architektur-Test prüft, dass neue Parameter die Konvention einhalten.
+**Parameter naming convention:** descriptive suffixes (`_lcoe`,
+`_lcos`, `_full_load_hours`, `_eur_t` with year anchor,
+`_capex_eur_kw`, `_opex_eur_kw_year`, `_lifetime`, `_vlh`, `_share`,
+`_gw` / `_twh`). Existing code names are not renamed retroactively;
+an architecture test checks that new parameters follow the convention.
 
-Diese Tabelle treibt die Tornado-Sensitivität und die Monte-Carlo-Robustheit (siehe A.10).
+This table drives the tornado sensitivity and the Monte-Carlo
+robustness (see A.10).
 
 ---
 
-## A.6 Versorgungs-Schwelle und Doppel-Filter-Methodik
+## A.6 Supply threshold and double-filter methodology
 
-Die Lager-Programme tragen unterschiedliche Defizit-Toleranzen (Schicht 3 der Lager-Architektur):
+The camp programs carry different deficit tolerances (layer 3 of the
+camp architecture):
 
-| Lager | Akzeptable Defizit-Schwelle | Begründung |
+| Camp | Acceptable deficit threshold | Rationale |
 |---|---|---|
-| Bestands-Lager | 0–5 GW | „kein Industrie-Lastabwurf, Standortsicherheit" |
-| Neutrale Mitte (Default) | 10–15 GW | ERAA + BNetzA + politisch verteilbares DSM |
-| EE-Lager | 15–25 GW | „DSM ist Teil der Energiewende" |
-| KKW-Lager | 5–10 GW | „Atom als Grundlast, kein DSM-Vertrauen" |
+| Existing-fleet camp | 0–5 GW | "no industrial load shedding, site security" |
+| Neutral middle (default) | 10–15 GW | ERAA + BNetzA + politically distributable DSM |
+| EE camp | 15–25 GW | "DSM is part of the energy transition" |
+| KKW camp | 5–10 GW | "nuclear as baseload, no DSM trust" |
 
-**Doppel-Filter-Methodik.** Realistische Pfade müssen zwei Filter passieren:
+**Double-filter methodology.** Realistic paths must pass two filters:
 
-1. **Versorgungssicherheits-Filter:** LOLE max. 3 h/Jahr (ENTSO-E ERAA), Reservemarge ≥ 5 % über Spitzenlast.
-2. **Stranded-Assets-Filter:** Investitionen müssen zum Steady State beitragen, nicht reine Bridge sein.
+1. **Security-of-supply filter:** LOLE max. 3 h/year (ENTSO-E ERAA),
+   reserve margin ≥ 5 % over peak load.
+2. **Stranded-assets filter:** investments must contribute to steady
+   state, not be pure bridge.
 
-Beide Filter zusammen schließen WEITER-SO methodisch aus — er scheitert an beiden.
-
----
-
-## A.7 Definitorische Pfad-Kalibrierung
-
-Die **fünf programmatischen Pfade** (BESTAND, EE-GAS, EE-H2, KKW-GAS, KKW-H2) sind so kalibriert, dass sie ihre Versorgungs-Anforderung in der Bridge-Phase erfüllen. **Das ist Pfad-Definition, keine Modell-Ableitung.** Was sich pfad-spezifisch unterscheidet, sind die Forward-Cost-Bilanz und die CO₂-Bilanz. WEITER-SO ist der einzige Pfad, dessen Backup-Architektur strukturell nicht ausreicht — auch das ist eine politische Setzung, kein Modell-Ergebnis.
-
-BESTAND ist insofern *besonders*, weil es ein Bestands-Lager-Pure-Play ist — politisch *gewollte* Erdgas-Strategie, nicht passive Drift. Damit gehört BESTAND methodisch zu den aktiv-kalibrierten Pfaden, nicht zu WEITER-SO.
-
-Diese definitorische Setzung stellt sicher, dass alle programmatischen Pfade die Versorgungssicherheit leisten können. Die Bewertung verlagert sich damit von „Wer hält den Stresstest?" auf „Was kostet ein Pfad, und wieviel CO₂ spart er?".
-
-**Backup-Asymmetrie als Pfad-Definition:**
-
-- EE-GAS, EE-H2: fixe 8 % Backup (Lager-Programm investiert aktiv in Reduktion)
-- KKW-GAS, KKW-H2: 5–15 % dynamisch (KKW-Grundlast übernimmt einen Teil)
-- BESTAND: 26–60 % wachsend (Lager-Programm gewollt fossil-dominant, aber kontrolliert)
-- WEITER-SO: ~50 % dauerhaft (Referenzfall: keine aktive Lager-Politik, Bestand bleibt aus Trägheit)
+Both filters together exclude WEITER-SO methodologically — it fails
+both.
 
 ---
 
-## A.8 Code-Modul-Mapping
+## A.7 Definitional path calibration
 
-| Modul | Funktion |
+The **five programmatic paths** (BESTAND, EE-GAS, EE-H2, KKW-GAS,
+KKW-H2) are calibrated to meet their supply requirement in the bridge
+phase. **This is a path definition, not a model derivation.** What
+differs path-specifically is the forward-cost balance and the CO₂
+balance. WEITER-SO is the only path whose backup architecture
+structurally falls short — that too is a political choice, not a model
+result.
+
+BESTAND is *special* in that it is an existing-fleet-camp pure play —
+a politically *wanted* gas strategy, not passive drift. Methodologically
+this puts BESTAND with the actively-calibrated paths, not with
+WEITER-SO.
+
+This definitional choice ensures that all programmatic paths can
+deliver security of supply. The evaluation therefore shifts from "Who
+passes the stress test?" to "What does a path cost, and how much CO₂
+does it save?".
+
+**Backup asymmetry as path definition:**
+
+- EE-GAS, EE-H2: fixed 8 % backup (camp program actively invests in
+  reduction)
+- KKW-GAS, KKW-H2: 5–15 % dynamic (nuclear baseload takes a share)
+- BESTAND: 26–60 % growing (camp program deliberately fossil-dominant,
+  but controlled)
+- WEITER-SO: ~50 % indefinitely (reference case: no active camp
+  policy, the existing fleet remains out of inertia)
+
+---
+
+## A.8 Code-module mapping
+
+| Module | Function |
 |---|---|
-| `core/demand.py` | Aggregierte Demand-Schicht (Sektorkopplung Mobilität / Wärme / Industrie / Sockel) |
-| `core/inventories/demand_curves.py` | Strom-Bedarfs-Trajektorien pro Pfad |
-| `core/inventories/tech_inventory.py` | Erzeugungstechnologien (Bestand, Zubau, CAPEX, WACC, …) |
-| `core/inventories/fuel_inventory.py` | Mengenbegrenzte Brennstoffe (Dauer-/Boost-Mengen, Preis, CO₂) |
-| `core/inventories/path_policy.py` | Pfad-Politik (Dispatch-Reihenfolge, Constraints, Politik-Default) |
-| `core/path_model.py` | Mengen-Bilanz-Pipeline: Kapazitäts-Aufbau, Dispatch, LCOE-Komposition, Tornado + Monte-Carlo |
-| `core/path_sensitivity.py` | Snapshot-LCOE für Lager-Presets und Schadens-Asymmetrie |
-| `core/path_inputs.py` | Param-Dataclasses für externe Konsumenten (Demand, ForwardCost, TimePath, …) |
-| `core/camp_ranges.py` | `CAMP_RANGES` als zentrale Bandbreiten-Tabelle |
-| `core/regret_decision_tree.py` | Reue-Matrix nach Savage-Minimax-Regret |
-| `core/system_state.py` | NORMAL / SCARCITY / DUNKELFLAUTE-State-Modell für Dispatch |
-| `core/wacc.py` | WACC-Helfer pro Technologie |
-| `core/source_trace.py` | CI-Tool für Quellen-Tag-Konsistenz |
-| `extensions/winter_stress.py` | 240-h-Dunkelflaute-Stresstest |
-| `extensions/landuse.py` | Flächenbedarfs-Rechnung |
-| `extensions/multicriteria.py` | Multikriterien-Bewertung pro Lager-Profil |
-| `extensions/profile_costs.py` | Profile-Cost-Sensi-Achse |
-| `extensions/consumers.py` | Verbraucher-Sicht (Strompreis-Aufschläge) |
+| `core/demand.py` | Aggregate demand layer (sector coupling: mobility / heat / industry / base load) |
+| `core/inventories/demand_curves.py` | Electricity-demand trajectories per path |
+| `core/inventories/tech_inventory.py` | Generation technologies (existing fleet, new build, CAPEX, WACC, …) |
+| `core/inventories/fuel_inventory.py` | Quantity-capped fuels (sustained / boost volumes, price, CO₂) |
+| `core/inventories/path_policy.py` | Path policy (dispatch order, constraints, policy default) |
+| `core/path_model.py` | Quantity-balance pipeline: capacity build-up, dispatch, LCOE composition, tornado + Monte Carlo |
+| `core/path_sensitivity.py` | Snapshot LCOE for camp presets and damage asymmetry |
+| `core/path_inputs.py` | Param dataclasses for external consumers (Demand, ForwardCost, TimePath, …) |
+| `core/camp_ranges.py` | `CAMP_RANGES` as the central range table |
+| `core/regret_decision_tree.py` | Regret matrix using Savage min-max regret |
+| `core/system_state.py` | NORMAL / SCARCITY / DUNKELFLAUTE state model for dispatch |
+| `core/wacc.py` | WACC helpers per technology |
+| `core/source_trace.py` | CI tool for source-tag consistency |
+| `extensions/winter_stress.py` | 240-h dark-doldrum stress test |
+| `extensions/landuse.py` | Land-use calculation |
+| `extensions/multicriteria.py` | Multi-criteria evaluation per camp profile |
+| `extensions/profile_costs.py` | Profile-cost sensitivity axis |
+| `extensions/consumers.py` | Consumer view (electricity-price surcharges) |
 
-**Modul-Architektur-Prinzip:** `core/` enthält den für alle Pfade gemeinsamen Kern, `extensions/` enthält ergänzende Analysen (eigenständig nutzbar, optionale Erweiterungen).
-
----
-
-## A.10 Sensitivität: Tornado und Monte-Carlo
-
-Die Sensitivitäts-Analyse ist die zentrale Methodik für die
-Robustheits-Aussagen zu Frist-Härte und Risiko-/Versicherungs-Logik.
-Sie sitzt in `core/sensitivity.py`
-(Baseline, Tornado, Monte-Carlo über strukturelle Hebel) und in
-`core/path_sensitivity.py` (Snapshot-Datenstrukturen für Lager-Presets)
-und nutzt die `CAMP_RANGES` aus A.5 als Eingabe.
-
-### A.10.1 Tornado-Analyse
-
-`tornado_path_analysis(path, ...)` rechnet pro Pfad und pro Lager-Parameter:
-
-- LCOE bei Parameter auf Low-Wert (alle anderen auf neutral)
-- LCOE bei Parameter auf High-Wert (alle anderen auf neutral)
-- Differenz = Sensitivität dieses Parameters für diesen Pfad
-
-Ausgabe: pro Pfad eine sortierte Liste der Top-Hebel mit ihrer LCOE-Wirkung in ct/kWh. Dient als Input für die Top-Hebel-Tabelle und für die Sensitivitätsanalyse („Welche Parameter dominieren den Pfad-LCOE?").
-
-### A.10.2 Monte-Carlo-Analyse
-
-`monte_carlo_all_paths(n_runs=3000, seed=42)` rechnet:
-
-- 3.000 Sample-Läufe (Default)
-- pro Lauf: alle Tornado-Hebel uniform aus ihren Bandbreiten ziehen, alle sechs Pfade auswerten
-- Output: P(EE-GAS < anderer Pfad) pro Vergleich, Ranking-Verteilung, Top-2-Wahrscheinlichkeit für EE-GAS
-
-### A.10.3 Stärken und Grenzen
-
-**Stärken:** Bandbreiten-basiert statt Worst/Best-Case; reproduzierbar (seed=42); liefert Verteilungen statt Punkt-Schätzer (3.000 Läufe).
-
-**Grenzen:** Verteilungsannahmen sind Lager-symmetrisch (Uniform über die Lager-Bandbreite), nicht empirisch validiert; kein Tail-Risk-Modell für Black-Swan-Ereignisse; Strukturparameter (Strombedarf-Niveau, Demand-Trajektorie) sind nicht im MC.
+**Module-architecture principle:** `core/` holds the kernel shared by
+all paths; `extensions/` contains complementary analyses (independently
+usable, optional extensions).
 
 ---
 
-## A.11 Architektur-Entscheidungen mit Begründung
+## A.10 Sensitivity: tornado and Monte Carlo
 
-Konsolidierung der Strategie-Entscheidungen, die der Architektur zugrunde liegen. Vor jeder strukturellen Änderung lesen, um den Designintent nicht zu verletzen.
+Sensitivity analysis is the central methodology for the robustness
+claims on deadline rigor and the risk/insurance logic. It lives in
+`core/sensitivity.py` (baseline, tornado, Monte Carlo over structural
+levers) and in `core/path_sensitivity.py` (snapshot data structures
+for camp presets), and uses `CAMP_RANGES` from A.5 as input.
 
-### A.11.1 Trennung Inventare ↔ Pipeline
+### A.10.1 Tornado analysis
 
-Modell-Logik ist auf zwei Schichten getrennt: `core/inventories/` (deklarative Tabellen für Tech, Brennstoff, Pfad-Politik, Demand) und `core/path_model.py` (operative Pipeline, die aus den Inventaren die Mengen-Bilanz und den LCOE ableitet).
+`tornado_path_analysis(path, ...)` computes, per path and per camp
+parameter:
 
-**Begründung:** Trennung nach Verantwortlichkeit. Inventare sind Stammdaten mit Source-Tags; die Pipeline ist Mechanik, die nur über die deklarierten Inventar-Werte rechnet. Refactor-Sicherheit: Pipeline-Änderungen können die Inventar-Werte nicht versehentlich verschieben.
+- LCOE with the parameter at its low value (all others at neutral)
+- LCOE with the parameter at its high value (all others at neutral)
+- Difference = sensitivity of this parameter for this path
 
-### A.11.2 Forward Cost only — keine Sunk Costs in LCOE
+Output: per path a sorted list of the top levers with their LCOE
+impact in ct/kWh. Feeds the top-lever table and the sensitivity
+analysis ("Which parameters dominate the path LCOE?").
 
-Alle LCOE-Rechnungen verwenden Forward-CAPEX (heute zu investieren), nicht historische CAPEX (was Bestand gekostet hat).
+### A.10.2 Monte-Carlo analysis
 
-**Begründung:** Sunk Costs sind entscheidungstheoretisch irrelevant für neue Investitionen. Vermischung verwechselt gesellschaftliche Buchhaltung mit Marginal-Entscheidungs-Ökonomie. Das Modell setzt die Trennung durch.
+`monte_carlo_all_paths(n_runs=3000, seed=42)` computes:
 
-### A.11.3 Zeit als First-Class-Variable
+- 3,000 sample runs (default)
+- per run: draw all tornado levers uniformly from their ranges,
+  evaluate all six paths
+- output: P(EE-GAS < other path) per comparison, ranking distribution,
+  Top-2 probability for EE-GAS
 
-Die Pipeline integriert von 2026 bis 2055, nicht nur bis 2045.
+### A.10.3 Strengths and limits
 
-**Begründung:** KKW-Pfade liefern unter realistischen Bauzeiten erst
-zwischen 2036 (atom_optimistic) und 2050 (ee_optimistic) — der Vergleich
-„Steady State 2045" verlöre 10–24 Jahre Bridge-Gas-Emissionen. Das
-30-Jahres-Fenster erfasst den vollen Übergang einschließlich der
-Post-KKW-Startup-Jahre.
+**Strengths:** range-based instead of worst/best-case; reproducible
+(`seed=42`); delivers distributions instead of point estimates (3,000
+runs).
 
-**Implikation:** Kumulierte CO₂-Differenzen werden sichtbar. Der
-Bridge-Gas-Effekt ist die zentrale strukturelle CO₂-Asymmetrie.
+**Limits:** the distributional assumptions are camp-symmetric (uniform
+over the camp range), not empirically validated; no tail-risk model
+for black-swan events; structural parameters (electricity-demand
+level, demand trajectory) are not in the MC.
 
-### A.11.4 Asymmetrische Flexibilität pro Pfad
+---
 
-Jeder Pfad hat pfad-spezifische Werte für DSM, V2G und Wärmepumpen-Anteile, mit zugehörigen Kostenrabatten und Investitionen.
+## A.11 Architectural decisions with rationale
 
-**Begründung:** EE-Pfade brauchen mehr Flexibilitäts-Investition als KKW-Pfade (Grundlast-Effekt). Ein globaler Parameter würde EE-Pfade benachteiligen oder KKW unfair gutschreiben.
+Consolidation of the strategic decisions underlying the architecture.
+Read before any structural change to avoid violating the design intent.
 
-### A.11.5 Open Source — MIT (Code) + CC-BY-4.0 (Doku)
+### A.11.1 Separation of inventories ↔ pipeline
 
-**Begründung:** MIT erlaubt Forks für andere regulatorische Kontexte (FR, PL, UK) und kommerzielle Nutzung (Berater, Investoren) ohne Reibung. CC-BY für die Doku erlaubt Wiederverwendung in Begleitliteratur ohne Lizenz-Konflikt.
+Model logic is split across two layers: `core/inventories/`
+(declarative tables for tech, fuel, path policy, demand) and
+`core/path_model.py` (operational pipeline that derives the quantity
+balance and LCOE from the inventories).
 
-### A.11.6 KKW-Hochlauf-Annahme: 24 GW agnostisch zur Reaktor-Aufteilung
+**Rationale:** separation of concerns. Inventories are master data
+with source tags; the pipeline is mechanics that only calculates with
+the declared inventory values. Refactor safety: pipeline changes
+cannot accidentally shift the inventory values.
 
-**Setzung.** Im Modell ist die KKW-Zielkapazität als `nuclear_target_gw_2050 = 24,0 GW` gesetzt. Die Aufteilung in Reaktor-Anzahl und -Klasse ist nicht parametrisiert — das Modell ist agnostisch zwischen 6×4 GW (EPR2-Klasse), 12×2 GW (SMR) und Mischformen.
+### A.11.2 Forward cost only — no sunk costs in LCOE
 
-**Begründung.** Die LCOE-Modellierung über `nuclear_capex_eur_kw = 11.000` ist Mittelwert für 4-GW-Klassen-Reaktoren (Hinkley/Flamanville-Niveau). Reaktor-Anzahl-Annahmen würden eine Industrie-Politik-Wette modellieren, die im Kerntext bewusst offen bleibt; Sensi-Engagement gehört zu den Lager-Bandbreiten in `CAMP_RANGES`, nicht zur Default-Modellierung.
+All LCOE calculations use forward CAPEX (what must be invested today),
+not historical CAPEX (what the existing fleet cost).
 
-**Reaktor-Tempo-Implikation.** Bei sechs Reaktoren à 4 GW im Hochlauf
-ab Lager-IBN (2036 atom_optimistic, 2046 neutral_default, 2050
-ee_optimistic) bis 2050 ergibt sich ein Inbetriebnahme-Tempo zwischen
-einem Reaktor pro 2,3 Jahre (atom_opt) und nur Einzel-Reaktoren bis 2055
-(ee_opt). Frankreich hat in seiner Aufbauphase 1980–1990 etwa einen
-Reaktor pro Jahr erreicht — das deutsche Tempo wäre selbst im
-atom_optimistic-Lager halb so schnell. Bei 12 SMR über acht Jahre wäre
-das Tempo handhabbarer (ein SMR pro 0,67 Jahre); die Risiken liegen
-dann in der industriellen Lieferketten-Reife für serielle Module.
+**Rationale:** sunk costs are irrelevant to new investment decisions
+from a decision-theory standpoint. Mixing them confuses social
+accounting with marginal-decision economics. The model enforces the
+separation.
 
-**Replacement-Logik.** Reaktor-Lifetime 60 Jahre. Erste Reaktoren
-müssten je nach Lager-IBN frühestens 2096+ ersetzt werden — außerhalb
-des Modell-Horizonts 2055. Steady-State 2055 nimmt an, dass die
-hochgelaufene Flotte zwischen 2050 und 2055 unverändert läuft.
+### A.11.3 Time as a first-class variable
 
-### A.11.7 Asynchrone Pfad-Fertigstellung im Steady-State-Fenster
+The pipeline integrates from 2026 to 2055, not just to 2045.
 
-**Setzung.** Markt-Parameter (Brennstoff-Preise, CO₂-Preise,
-Mengen-Kapazitäten) sind im Modell jahresunabhängig oder plateauen
-spätestens 2055 — Camp-Belief-Spreizung statt linearer Extrapolation.
-Politik-Trajektorien (KKW-Neubau-Hochlauf, Sektor-Kopplungs-Demand)
-laufen dagegen weiter, bis das jeweilige Pfad-Ziel realisiert ist; im
-neutralen Lager erreicht der KKW-Pfad sein 24-GW-Ziel erst in den
-späten 2060ern (Bauzeit-sqrt-Streckung).
+**Rationale:** nuclear paths under realistic build times only deliver
+between 2036 (atom_optimistic) and 2050 (ee_optimistic) — the
+"steady state 2045" comparison would lose 10–24 years of bridge-gas
+emissions. The 30-year window captures the full transition including
+the post-nuclear-startup years.
 
-**Implikation für Rolling-LCOE.** Im Fenster ab 2055 trägt die
-verbleibende LCOE-Dynamik ausschließlich die asynchrone Pfad-
-Fertigstellung: in KKW-Pfaden wird Bridge-Gas durch späte Reaktor-
-Inbetriebnahmen abgelöst, die Rolling-LCOE-Drift macht diesen Zeit-
-Versatz politischer Programme sichtbar. Strikte Monotonie der Rolling-
-Konvergenz ist deshalb konzeptionell nicht erwartbar — eine Pfad-
-Politik stoppt nicht, nur weil ein Steady-State-Fenster startet.
-Operationale Schranke (getestet in
+**Implication:** cumulative CO₂ differences become visible. The
+bridge-gas effect is the central structural CO₂ asymmetry.
+
+### A.11.4 Asymmetric flexibility per path
+
+Each path has path-specific values for DSM, V2G, and heat-pump shares,
+together with the associated cost discounts and investments.
+
+**Rationale:** EE paths need more flexibility investment than KKW
+paths (baseload effect). A global parameter would disadvantage EE
+paths or credit KKW unfairly.
+
+### A.11.5 Open source — MIT (code) + CC-BY-4.0 (documentation)
+
+**Rationale:** MIT enables forks for other regulatory contexts (FR,
+PL, UK) and commercial use (consultants, investors) without friction.
+CC-BY for the documentation allows reuse in companion literature
+without license conflict.
+
+### A.11.6 Nuclear ramp-up assumption: 24 GW agnostic to reactor split
+
+**Choice.** In the model the nuclear target capacity is set as
+`nuclear_target_gw_2050 = 24.0 GW`. The split into reactor count and
+class is not parameterized — the model is agnostic between 6×4 GW
+(EPR2 class), 12×2 GW (SMR), and mixed forms.
+
+**Rationale.** The LCOE modeling via `nuclear_capex_eur_kw = 11,000`
+is a mean for 4-GW-class reactors (Hinkley/Flamanville level).
+Reactor-count assumptions would model an industrial-policy bet that
+the core text deliberately leaves open; sensitivity engagement
+belongs to the camp ranges in `CAMP_RANGES`, not the default model.
+
+**Reactor-pace implication.** Six 4-GW reactors during ramp-up from
+camp IBN (2036 atom_optimistic, 2046 neutral_default, 2050
+ee_optimistic) through 2050 yields a commissioning pace between one
+reactor every 2.3 years (atom_opt) and only individual reactors
+through 2055 (ee_opt). During its build-up phase 1980–1990 France
+achieved about one reactor per year — the German pace would be half
+that even in the atom_optimistic camp. With 12 SMRs over eight years
+the pace would be more manageable (one SMR every 0.67 years); the
+risks then lie in industrial supply-chain maturity for serial modules.
+
+**Replacement logic.** Reactor lifetime 60 years. Depending on camp
+IBN, the first reactors would need replacement no earlier than 2096+ —
+outside the model horizon of 2055. Steady state 2055 assumes the
+ramped-up fleet runs unchanged between 2050 and 2055.
+
+### A.11.7 Asynchronous path completion in the steady-state window
+
+**Choice.** Market parameters (fuel prices, CO₂ prices, capacity
+volumes) are year-independent in the model or plateau by 2055 at the
+latest — camp-belief spread instead of linear extrapolation. Policy
+trajectories (KKW new-build ramp-up, sector-coupling demand) keep
+running until the path target is realized; in the neutral camp the
+KKW path reaches its 24-GW target only in the late 2060s (sqrt
+build-time stretching).
+
+**Implication for rolling LCOE.** In the window from 2055 onward, the
+remaining LCOE dynamics are carried solely by the asynchronous path
+completion: in KKW paths bridge gas is replaced by late reactor
+commissioning, and the rolling-LCOE drift makes this time offset of
+political programs visible. Strict monotone convergence of the rolling
+metric is therefore not conceptually expected — a path policy does
+not stop just because a steady-state window starts. Operational bound
+(tested in
 `tests/core/test_rolling_lcoe.py:test_rolling_lcoe_asymptotic_policy_completion`):
-`|rolling(2055) − rolling(2070)| < 1 ct/kWh` für alle aktiven Pfade.
+`|rolling(2055) − rolling(2070)| < 1 ct/kWh` for all active paths.
 
 ---
 
-## A.12 Methodische Entscheidungen mit Begründung
+## A.12 Methodological decisions with rationale
 
-### A.12.1 Source-Trace als CI-Pflicht
+### A.12.1 Source-trace as a CI obligation
 
-Jeder Default-Parameter trägt einen `[SRC: TAG]`- oder `[CALIBRATED]`-Kommentar. Tags resolvieren in `docs/SOURCES.md` mit Zitat, URL, Datum. CI scheitert sonst.
+Every default parameter carries a `[SRC: TAG]` or `[CALIBRATED]`
+comment. Tags resolve in `docs/SOURCES.md` to a citation, URL, and
+date. CI fails otherwise.
 
-**Begründung:** Ohne Erzwingung degradiert Quellen-Disziplin nach Monaten. CI-Compute-Zeit (~5 s) ist trivial; die erhaltene Disziplin ist projekt-essenziell.
+**Rationale:** without enforcement, source discipline degrades within
+months. The CI compute time (~5 s) is trivial; the preserved
+discipline is project-essential.
 
-### A.12.2 Lager-Presets als adversarielle Sets
+### A.12.2 Camp presets as adversarial sets
 
-Vier Lager: EE-optimistisch, neutrale Mitte, Bestand-optimistisch, Atom-optimistisch.
+Four camps: EE-optimistic, neutral middle, existing-fleet-optimistic,
+atom-optimistic.
 
-**Begründung:** Robustheits-Aussagen sind nur belastbar, wenn sie *adversarielle* Parameter überleben. Ein Lauf mit EE-Lager-Werten ist nicht „EE-freundlich verzerrt", sondern „wie sieht die Analyse unter den EE-günstigsten Annahmen aus". Wenn KKW-Pfade unter EE-Lager-Annahmen verlieren UND unter Atom-Lager-Annahmen verlieren, ist das ein robustes Ergebnis.
+**Rationale:** robustness claims only hold up if they survive
+*adversarial* parameters. A run with EE-camp values is not
+"EE-friendly biased" but "what does the analysis look like under the
+most EE-favorable assumptions". If KKW paths lose under EE-camp
+assumptions AND under atom-camp assumptions, that is a robust result.
 
-### A.12.3 Verteilungen für Monte-Carlo
+### A.12.3 Distributions for Monte Carlo
 
-Uniform-Verteilung über die Lager-Bandbreite, ohne Korrelationen. Das ist die konservative Default-Wahl: breite Spannweite, weniger Häufung am Mittel. Korrelationen lassen sich nachträglich ergänzen, wenn ein methodischer Bedarf belegt ist.
+Uniform distribution over the camp range, without correlations. This
+is the conservative default: a broad span, less clustering at the
+mean. Correlations can be added later if a methodological need is
+demonstrated.
 
-**Begründung.** Reale KKW-Kostenüberschreitungen sind asymmetrisch (Hinkley 2× Budget, Flamanville 4× — kein KKW-Projekt 4× *unter* Budget). Lognormal-Verteilungen würden das schärfer erfassen, kosten aber zusätzliche Annahmen über die Verteilungs-Parameter. Bis dahin bleibt die robuste Default-Wahl Uniform mit dokumentierter Bandbreite.
+**Rationale.** Real nuclear cost overruns are asymmetric (Hinkley 2×
+budget, Flamanville 4× — no nuclear project came in 4× *under*
+budget). Lognormal distributions would capture that more sharply but
+cost extra assumptions about the distribution parameters. Until then
+the robust default remains uniform with documented ranges.
 
-### A.12.4 Sektorkopplung als Primärenergie-Hebel
+### A.12.4 Sector coupling as a primary-energy lever
 
-Das Modell trackt explizit den Primärenergie-Effizienzgewinn aus EVs und Wärmepumpen. Der 2:1-Hebel (1 TWh zusätzlicher Strom ersetzt 2 TWh fossile End-Energie) wird gerechnet und in der UI sichtbar gemacht.
+The model explicitly tracks the primary-energy efficiency gain from
+EVs and heat pumps. The 2:1 lever (1 TWh of additional electricity
+replaces 2 TWh of fossil final energy) is computed and made visible
+in the UI.
 
-**Begründung:** Die öffentliche Debatte rahmt Sektorkopplung als „mehr Strombedarf = mehr Risiko". Diese Rahmung ist unvollständig: derselbe Strombedarf ersetzt mehr fossile Energie, als er an EE-Erzeugung verlangt. Ohne Explizit-Machen verlöre das Modell eine seiner stärksten Einsichten.
+**Rationale:** the public debate frames sector coupling as "more
+electricity demand = more risk". That framing is incomplete: the same
+electricity demand replaces more fossil energy than it demands in EE
+generation. Without making this explicit the model would lose one of
+its strongest insights.
 
-### A.12.5 Winter-Stresstest kalibriert, nicht erfunden
+### A.12.5 Winter stress test: calibrated, not invented
 
-Die Winter-Spitzenlast-Formel ist gegen die BNetzA-2045-Bandbreite (130–160 GW für vollelektrifiziertes Szenario) kalibriert.
+The winter peak-load formula is calibrated against the BNetzA-2045
+range (130–160 GW for the fully-electrified scenario).
 
-**Begründung:** Nach Kalibrierung gegen ÜNB-Szenarien (Heizungs-Multiplikator 1,8×) liefert die Formel 119 GW für Default-Elektrifizierung und steigt Richtung 145 GW für Voll-Elektrifizierung. Empirischer Anker: Dezember-2024-Dunkelflaute (264 h, längste seit 1982).
+**Rationale:** after calibration against ÜNB scenarios (heating
+multiplier 1.8×), the formula yields 119 GW for default
+electrification and rises toward 145 GW for full electrification.
+Empirical anchor: December 2024 dark-doldrum (264 h, longest since
+1982).

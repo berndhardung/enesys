@@ -29,13 +29,20 @@ from typing import TYPE_CHECKING
 import matplotlib.pyplot as plt
 import numpy as np
 
-from enesys.viz.charts._helpers import Variant, add_oss_footer, dpi_for_variant
+from enesys.viz.charts._helpers import (
+    Variant,
+    add_oss_footer,
+    dpi_for_variant,
+    figsize_for_variant,
+)
+from enesys.viz.charts.labels import label as _label
 from enesys.viz.matplotlib_style import (
     PRINT_FONT_SIZE_BAR_LABEL,
     PRINT_FONT_SIZE_BASE,
     PRINT_FONT_SIZE_LABEL,
     PRINT_FONT_SIZE_LEGEND,
     STD_FIGSIZE_WIDE,
+    apply_mobile_style,
     apply_print_style,
 )
 
@@ -94,6 +101,9 @@ def compute_build_time_data(
     *,
     projekte: tuple[Project, ...] = DEFAULT_PROJECTS,
     korridor: tuple[int, int] = EMPIRIE_KORRIDOR,
+    camp: str | None = None,  # noqa: ARG001
+    param_set: str | None = None,  # noqa: ARG001
+    param_overrides: dict[str, float] | None = None,  # noqa: ARG001
 ) -> BuildTimeData:
     """Bündelt Project-Daten plus Empirie-Korridor in eine Dataclass.
 
@@ -119,13 +129,15 @@ def _fid_vorlauf(p: Project) -> int:
 
 def render_build_time_empirics(
     data: BuildTimeData,
-    out_path: Path | str,
+    out_path: Path | str | None = None,
     *,
     variant: Variant = "embedded",
     title: str | None = None,
     subtitle: str | None = None,
     brand: BrandConfig | None = None,
-) -> None:
+    return_fig: bool = False,
+    lang: str = "de",
+) -> plt.Figure | None:
     """Rendert das KKW-Frist-Empirie-Chart.
 
     Pro Project zwei gestapelte Balken (Plan + Real). Jeder Balken
@@ -135,9 +147,9 @@ def render_build_time_empirics(
     sichtbar. Werte über den Balken annotiert; nicht abgeschlossene
     Projekte tragen einen ``*``-Marker.
     """
-    apply_print_style()
+    apply_mobile_style() if variant == "mobile" else apply_print_style()
 
-    fig, ax = plt.subplots(figsize=STD_FIGSIZE_WIDE)
+    fig, ax = plt.subplots(figsize=figsize_for_variant(variant, STD_FIGSIZE_WIDE))
 
     projekte = data.projekte
     n = len(projekte)
@@ -158,7 +170,7 @@ def render_build_time_empirics(
         color="#F4C46A",
         edgecolor="#A8741A",
         linewidth=1.0,
-        label="FID lead time (decision → groundbreaking)",
+        label=_label("build_time.fid_lead_time", lang),
     )
     ax.bar(
         x + width / 2,
@@ -178,7 +190,7 @@ def render_build_time_empirics(
         color="#9BBED4",
         edgecolor="#6090B0",
         linewidth=1.0,
-        label="Planned construction time",
+        label=_label("build_time.planned", lang),
     )
     bars_real = ax.bar(
         x + width / 2,
@@ -188,7 +200,7 @@ def render_build_time_empirics(
         color="#1F4E8C",
         edgecolor="#0A2A50",
         linewidth=1.0,
-        label="Realised / current construction time",
+        label=_label("build_time.realised", lang),
     )
 
     for bar, val_total, val_bauzeit in zip(bars_plan, plan_total, plan_years, strict=False):
@@ -221,7 +233,7 @@ def render_build_time_empirics(
     # Text mit den Bar-Labels kollidiert.
     k_low, k_high = data.korridor
     korridor_patch = ax.axhspan(k_low, k_high, color="#FFE8C8", alpha=0.4, zorder=0)
-    korridor_patch.set_label(f"Empirical corridor (total lead time {k_low}–{k_high} years)")
+    korridor_patch.set_label(_label("build_time.corridor", lang, low=k_low, high=k_high))
 
     ax.set_xticks(x)
     ax.set_xticklabels(
@@ -229,7 +241,7 @@ def render_build_time_empirics(
         fontsize=PRINT_FONT_SIZE_BASE,
     )
     ax.tick_params(axis="y", labelsize=PRINT_FONT_SIZE_BASE)
-    ax.set_ylabel("Years from political decision to IBN", fontsize=PRINT_FONT_SIZE_LABEL)
+    ax.set_ylabel(_label("build_time.ylabel", lang), fontsize=PRINT_FONT_SIZE_LABEL)
     ax.set_ylim(0, 32)
     ax.grid(axis="y", linestyle=":", alpha=0.5)
     ax.set_axisbelow(True)
@@ -251,6 +263,11 @@ def render_build_time_empirics(
     plt.subplots_adjust(bottom=0.18)
     add_oss_footer(fig)
 
+    if return_fig:
+        return fig
+
+    if out_path is None:
+        raise ValueError("out_path must be set when return_fig=False")
     out_path = Path(out_path)
     dpi = dpi_for_variant(variant)
     if variant == "web":
@@ -262,3 +279,4 @@ def render_build_time_empirics(
             out_path = out_path.with_suffix(".png")
         fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
+    return None

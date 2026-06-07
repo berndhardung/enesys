@@ -24,7 +24,7 @@ Konsequenz für die Reue-Analyse: im atom_optimistic-Lager (NEP-Welt-
 Belief 0,50, KKW-Realgrad 1,00) drosselt der Min-Operator EE-Politik
 strukturell — KKW-GAS wird in diesem Lager zum günstigsten Pfad. In
 den drei anderen Lagern bleibt EE-GAS Reue-Sieger. Min-Max-Regret
-hält die Buch-Empfehlung EE-GAS.
+hält die Empfehlung EE-GAS.
 """
 
 from __future__ import annotations

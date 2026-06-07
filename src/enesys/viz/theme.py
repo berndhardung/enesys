@@ -218,6 +218,40 @@ MENGENBILANZ_SCHICHT_LABELS: dict[str, str] = {
     "ee_supply": "EE-Supply (Stunden-Mittel)",
 }
 
+
+MENGENBILANZ_SCHICHT_LABELS_EN: dict[str, str] = {
+    "kohle": "Coal",
+    "kkw": "Nuclear",
+    "hydro": "Hydro",
+    "biomasse": "Biomass",
+    "pv": "PV",
+    "wind_on": "Wind onshore",
+    "wind_off": "Wind offshore",
+    "battery": "Battery",
+    "dsm": "DSM",
+    "importe": "Imports",
+    "erdgas_bestand": "Existing natural gas (bridge)",
+    "gas_h2ready_erdgas": "Gas h2-ready (on natural gas)",
+    "gas_h2ready_h2": "Gas h2-ready (on H₂)",
+    "strategische_reserve": "Strategic reserve (§13b)",
+    "ee_supply": "RE supply (hourly average)",
+}
+
+
+def mengenbilanz_label(layer: str, lang: str = "de") -> str:
+    """Return the layer label in the requested language.
+
+    Falls back to the German label if the EN translation is missing
+    (defensive — partial translations remain readable rather than
+    raising a KeyError mid-render).
+    """
+    if lang == "en":
+        return MENGENBILANZ_SCHICHT_LABELS_EN.get(layer) or MENGENBILANZ_SCHICHT_LABELS.get(
+            layer, layer
+        )
+    return MENGENBILANZ_SCHICHT_LABELS.get(layer, layer)
+
+
 # Schicht-Farben für das Vier-Schichten-Stack-Diagramm.
 LAYER_COLORS: dict[str, str] = {
     "Erzeugung": "#3B7B6B",

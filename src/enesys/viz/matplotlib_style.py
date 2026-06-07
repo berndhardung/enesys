@@ -149,6 +149,30 @@ def apply_print_style() -> None:
     )
 
 
+def apply_mobile_style() -> None:
+    """Mobile-Stil mit größeren Schriften für ~375 px Viewport.
+
+    Wie ``apply_print_style``, aber Schriften ~50 % größer, damit
+    Achsen-Labels und Legend bei figsize 8×10 inch noch lesbar bleiben,
+    wenn das Bild auf Phone-Breite skaliert wird.
+    """
+    apply_print_style()
+    import matplotlib.pyplot as plt
+
+    plt.rcParams.update(
+        {
+            "font.size": PRINT_FONT_SIZE_BASE + 4,
+            "axes.titlesize": PRINT_FONT_SIZE_TITLE + 4,
+            "axes.labelsize": PRINT_FONT_SIZE_LABEL + 4,
+            "xtick.labelsize": PRINT_FONT_SIZE_BASE + 3,
+            "ytick.labelsize": PRINT_FONT_SIZE_BASE + 3,
+            "legend.fontsize": PRINT_FONT_SIZE_LEGEND + 3,
+            "figure.titlesize": PRINT_FONT_SIZE_SUPTITLE + 4,
+            "lines.linewidth": 2.6,
+        }
+    )
+
+
 def save_chart(fig: Any, output_path: Path | str, *, dpi: int = PRINT_DPI, **kwargs: Any) -> None:
     """Speichert ein Diagramm mit konfigurierbarer DPI und sauberem Padding.
 

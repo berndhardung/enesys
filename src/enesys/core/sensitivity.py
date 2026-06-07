@@ -368,7 +368,7 @@ def damage_asymmetry_settings(
 
     Rückgabe: Liste von Dicts mit Schlüsseln ``label``, ``lager``,
     ``wacc_nuclear``, ``nep_realisierung_grad`` (Welt-Belief-Werte aus
-    LAGER_RANGES, narrativ für Buch- und Streamlit-Display),
+    LAGER_RANGES, narrative Werte für UI- und Streamlit-Display),
     ``ee_gas_ct_kwh``, ``kkw_gas_ct_kwh``, ``diff_ct_kwh``,
     ``schaden_mrd_eur``, ``guenstigerer_pfad``.
     """

@@ -44,7 +44,7 @@ from enesys.ui.slider_bridge import (
     slider_groups,
 )
 from enesys.version import get_base_version
-from enesys.viz.charts import CHARTS, ChartSpec
+from enesys.viz.charts import CHARTS, CHARTS_BY_ID, ChartSpec
 
 DEFAULT_ANCHOR_CAMP = "neutral_default"
 DEFAULT_VARIANT_CAMP = "atom_optimistic"
@@ -54,6 +54,8 @@ QP_LANG = "lang"
 QP_ANCHOR = "anchor"
 QP_VARIANT = "variant"
 QP_MOBILE = "mobile"
+QP_CHART = "chart"
+ALL_CHARTS_KEY = "__all__"  # sentinel: render the full six-chart stack
 
 
 # ---------------------------------------------------------------------------
@@ -110,8 +112,37 @@ def _caption_for_variant(camp_id: str, overrides: dict[str, float], lang: str) -
 
 SCREEN_DPI = 110  # render once at screen DPI; book-quality stays in viz/charts
 
+# Per-chart compute overrides for the on-screen render path. The Monte-Carlo
+# chart is the single most expensive compute (~3.5 s at the 500-draw default);
+# 300 draws keep the violins/win-probabilities visually stable while cutting
+# ~40 % off the wall-clock. Book/export/test paths keep the full default —
+# this only affects the Streamlit screen render.
+_SCREEN_COMPUTE_KWARGS: dict[str, dict[str, int]] = {
+    "montecarlo": {"n_runs": 300},
+}
+
 
 @st.cache_data(show_spinner=False)
+def _cached_chart_data(
+    chart_id: str,
+    camp: str,
+    overrides_items: tuple[tuple[str, float], ...],
+) -> Any:
+    """Memoised ``compute`` step — language- and variant-independent.
+
+    Split out from the PNG cache so that switching language or toggling
+    the mobile layout (both change only the render, not the model data)
+    re-renders without re-running the expensive model computation. The
+    cache key is ``(chart_id, camp, overrides)`` only.
+    """
+    spec = next(s for s in CHARTS if s.chart_id == chart_id)
+    overrides = dict(overrides_items) if overrides_items else None
+    return spec.compute(
+        camp=camp, param_overrides=overrides, **_SCREEN_COMPUTE_KWARGS.get(chart_id, {})
+    )
+
+
+@st.cache_data(show_spinner=False, persist="disk")
 def _cached_chart_png(
     chart_id: str,
     camp: str,
@@ -125,11 +156,16 @@ def _cached_chart_png(
     second visit to a chart into a dict lookup and an ``st.image`` call,
     skipping matplotlib entirely. The cache key is the chart id plus the
     camp/overrides/variant/lang tuple; ``st.cache_data`` invalidates on
-    input change.
+    input change. The compute step is delegated to :func:`_cached_chart_data`
+    so a language/variant switch reuses the already-computed model data.
+
+    ``persist="disk"`` writes the rendered PNG to the deployment's cache
+    directory, so a state computed once stays fast across reruns and
+    process restarts within a deployment (recomputed only after a code
+    redeploy or an explicit cache clear) — no prebuilt binaries in git.
     """
     spec = next(s for s in CHARTS if s.chart_id == chart_id)
-    overrides = dict(overrides_items) if overrides_items else None
-    data = spec.compute(camp=camp, param_overrides=overrides)
+    data = _cached_chart_data(chart_id, camp, overrides_items)
     fig = spec.render(data, return_fig=True, variant=render_variant, lang=lang)
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=SCREEN_DPI, bbox_inches="tight")
@@ -177,10 +213,18 @@ def _clamp(value: float, spec: SliderSpec) -> float:
 
 
 def _reset_sliders_to_camp(camp: str) -> None:
-    """Snap all slider session-state values to the given camp's defaults."""
+    """Snap all slider session-state values to the given camp's defaults.
+
+    Values are clamped into each slider's range as a safety net. The
+    range is auto-widened to cover all camp defaults (see
+    :func:`slider_bridge._widen_specs_to_cover_camps`), so this is a
+    no-op for camps — but it keeps a stale or hand-crafted session value
+    from pushing the bound widget out of range.
+    """
     defaults = get_camp_defaults(camp)
     for key, value in defaults.items():
-        st.session_state[_slider_key(key)] = value
+        spec = SLIDER_SPEC.get(key)
+        st.session_state[_slider_key(key)] = _clamp(value, spec) if spec else value
 
 
 def _current_slider_values() -> dict[str, float]:
@@ -309,10 +353,14 @@ def _slider_widget(key: str, spec: SliderSpec, lang: str) -> None:
     label = spec.label_en if lang == "en" else spec.label_de
     tooltip_text = spec.tooltip_en if lang == "en" else spec.tooltip_de
     source_label = "Source" if lang == "en" else "Quelle"
+    sources_link_label = "sources page" if lang == "en" else "Quellenseite"
+    # Path-relative deep link (Streamlit ≥1.36 routes st.Page via url_path, not
+    # ``?page=``): from /charts → /sources?tag=…&lang=…. Carrying ``lang`` keeps
+    # the language sticky on reload/share of the deep link.
     help_md = (
         f"{tooltip_text}\n\n"
         f"📖 *{source_label}:* `{spec.source_tag}` "
-        f"([sources page](?page=sources&tag={spec.source_tag}))"
+        f"([{sources_link_label}](sources?tag={spec.source_tag}&lang={lang}))"
     )
     container = st.sidebar if spec.group == "top" else st
     container.slider(
@@ -387,6 +435,42 @@ def _render_footer(lang: str, texts: Any) -> None:
     )
 
 
+def _render_chart_selector(lang: str) -> str:
+    """Render the chart picker and return the selected ``chart_id``.
+
+    Returns a single ``chart_id`` or :data:`ALL_CHARTS_KEY`. This is the
+    core of the lazy-render path: only the selected chart is computed and
+    drawn on a given rerun, so the first paint costs one chart instead of
+    all six. The default lands on the first (cheapest) chart; ``Alle
+    Charts`` restores the full stacked view on demand. The choice is
+    mirrored to ``?chart=`` so it survives reload and is shareable.
+    """
+    options = [s.chart_id for s in CHARTS] + [ALL_CHARTS_KEY]
+    all_label = "All charts" if lang == "en" else "Alle Charts"
+
+    def _fmt(cid: str) -> str:
+        if cid == ALL_CHARTS_KEY:
+            return all_label
+        spec = CHARTS_BY_ID[cid]
+        return spec.title_en if lang == "en" else spec.title_de
+
+    if "active_chart" not in st.session_state:
+        qp = st.query_params.get(QP_CHART)
+        st.session_state.active_chart = qp if qp in options else options[0]
+
+    selected = st.radio(
+        "Chart",
+        options=options,
+        format_func=_fmt,
+        horizontal=True,
+        key="active_chart",
+        label_visibility="collapsed",
+    )
+    if st.query_params.get(QP_CHART) != selected:
+        st.query_params[QP_CHART] = selected
+    return selected
+
+
 def render_path_page() -> None:
     """Render the compare view as a standalone Streamlit page.
 
@@ -423,7 +507,9 @@ def render_path_page() -> None:
     )
     st.markdown(sub)
 
-    for spec in CHARTS:
+    selected = _render_chart_selector(lang)
+    specs = list(CHARTS) if selected == ALL_CHARTS_KEY else [CHARTS_BY_ID[selected]]
+    for spec in specs:
         if spec.varies_with_camp:
             _render_chart_pair(spec, anchor_camp, variant_camp, overrides, lang, render_variant)
         else:

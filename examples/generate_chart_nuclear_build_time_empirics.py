@@ -42,18 +42,33 @@ def main() -> None:
         default="neutral_default",
         help="Accepted for CLI consistency, but ignored (build time is historical).",
     )
+    parser.add_argument(
+        "--lang",
+        choices=("de", "en"),
+        default="en",
+        help="Chart language for title, subtitle and in-figure labels (default: en)",
+    )
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
     data = compute_build_time_data()
     suffix = ".svg" if args.variant == "web" else ".png"
-    out = args.out / (OUT_NAME + suffix)
+    out = args.out / f"{OUT_NAME}_{args.lang}{suffix}"
+    title = {
+        "en": "Western nuclear build-time empirics — FID lead time + construction",
+        "de": "Bauzeit-Empirie westlicher Kernkraftwerke — FID-Vorlauf + Bauzeit",
+    }[args.lang]
+    subtitle = {
+        "en": "FOAK reactors 2002–2030 · stacked: political decision → groundbreaking + groundbreaking → IBN",
+        "de": "FOAK-Reaktoren 2002–2030 · gestapelt: Politik-Beschluss → Spatenstich + Spatenstich → IBN",
+    }[args.lang]
     render_build_time_empirics(
         data,
         out,
         variant=args.variant,
-        title="Western nuclear build-time empirics — FID lead time + construction",
-        subtitle="FOAK reactors 2002–2030 · stacked: political decision → groundbreaking + groundbreaking → IBN",
+        title=title,
+        subtitle=subtitle,
+        lang=args.lang,
     )
     print(f"Saved: {out}")
 

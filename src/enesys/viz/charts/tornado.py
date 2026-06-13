@@ -240,7 +240,7 @@ def _draw_tornado_panel(
         color="black",
         linestyle="--",
         linewidth=1,
-        label=f"Baseline {ptornado.baseline:.2f} ct",
+        label=f"{_label('tornado.baseline', lang)} {ptornado.baseline:.2f} ct",
     )
 
     ax.set_yticks(y)

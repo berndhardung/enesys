@@ -23,7 +23,7 @@ it to a clickable citation.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 # Camp definition (book-consistent with the parameter-variation spec).
 LAGER_OPTIONS: tuple[tuple[str, str, str, str], ...] = (
@@ -110,6 +110,16 @@ SLIDER_SPEC: dict[str, SliderSpec] = {
             "Treibt strukturell den EE-Hochlauf in allen aktiven Pfaden. "
             "Niedrigere Werte verlangsamen den EE-Ausbau und erhöhen den "
             "fossilen Brücken-Bedarf entsprechend.\n\n"
+            "Lager-Welt-Belief:\n"
+            "- **EE-Lager** 0.85 — Annahme, dass die Politik den Plan "
+            "  weitgehend realisiert.\n"
+            "- **Neutral** 0.65 — empirischer Mittelwert (FOAK-Anker).\n"
+            "- **Atom-Lager** 0.50 — »weniger Trassen wenn KKW Grundlast "
+            "  trägt«.\n"
+            "- **Bestand-Lager** 0.45 — gedrosselte Politik, EU-Resilienz "
+            "  korrigiert nach oben.\n"
+            "- **WEITER-SO** 0.30 — passive Trägheit, historisches Tempo "
+            "  ohne aktive Politik.\n\n"
             "*Quelle:* BNETZA-MON-Q4-2025."
         ),
         tooltip_en=(
@@ -119,6 +129,15 @@ SLIDER_SPEC: dict[str, SliderSpec] = {
             "Structurally drives the renewables ramp-up in every active "
             "pathway. Lower values slow the renewables build-out and raise "
             "the fossil bridge demand accordingly.\n\n"
+            "Camp world-belief:\n"
+            "- **EE camp** 0.85 — assumes policy largely delivers the plan.\n"
+            "- **Neutral** 0.65 — empirical midpoint (FOAK anchor).\n"
+            "- **Nuclear camp** 0.50 — 'fewer transmission lines needed if "
+            "  nuclear carries baseload'.\n"
+            "- **Existing-fleet camp** 0.45 — dampened policy, EU "
+            "  resilience corrects upwards.\n"
+            "- **WEITER-SO** 0.30 — passive inertia, historical rate "
+            "  without active policy.\n\n"
             "*Source:* BNETZA-MON-Q4-2025."
         ),
         source_tag="BNETZA-MON-Q4-2025",
@@ -136,15 +155,17 @@ SLIDER_SPEC: dict[str, SliderSpec] = {
             "Bauzeit tatsächlich ans Netz geht. 1.0 = nominaler Plan, "
             "0.20–0.40 = empirisch realisierte Quote (Hinkley Point C, "
             "Flamanville, Olkiluoto).\n\n"
-            "Lager-Lesart:\n"
-            "- **EE-Lager** liest die Cour-des-Comptes-Empirie und argumentiert "
-            "  niedrige Realgrade (~0.30) wegen Bauzeit-Überläufen und "
+            "Lager-Welt-Belief:\n"
+            "- **EE-Lager** 0.20 — Cour-des-Comptes-Empirie als oberes "
+            "  Limit, niedrige Realgrade wegen Bauzeit-Überläufen und "
             "  NPS-Verzögerungen.\n"
-            "- **Atom-Lager** argumentiert höhere Werte (>0.70) für die "
-            "  nächste EPR-/SMR-Generation mit ausgereiftem Lieferketten- "
-            "  und Genehmigungsregime.\n"
-            "- **Bestand-/WEITER-SO-Lager** brauchen den Parameter nicht, "
-            "  weil ihre Pfade keinen KKW-Neubau enthalten.\n\n"
+            "- **Neutral / Bestand / WEITER-SO** 0.40 — empirischer "
+            "  Mittelwert westlicher FOAK-Projekte.\n"
+            "- **Atom-Lager** 1.00 — nächste EPR-/SMR-Generation mit "
+            "  ausgereiftem Lieferketten- und Genehmigungsregime erfüllt "
+            "  Plan-Bauzeit.\n\n"
+            "Wirkt nur auf KKW-Pfade (KKW-GAS, KKW-H2); Bestand/"
+            "WEITER-SO-Pfade enthalten keinen KKW-Neubau.\n\n"
             "*Quellen:* COURDESCOMPTES-FLAM (primär), EDF-HPC, NAO-HPC-2017."
         ),
         tooltip_en=(
@@ -152,15 +173,17 @@ SLIDER_SPEC: dict[str, SliderSpec] = {
             "the grid within the modelled build time. 1.0 = nominal plan, "
             "0.20–0.40 = empirically realised rate (Hinkley Point C, "
             "Flamanville, Olkiluoto).\n\n"
-            "Camp reading:\n"
-            "- **EE camp** reads the Cour des Comptes empirics and argues "
-            "  low realisation (~0.30) on the back of construction-time "
+            "Camp world-belief:\n"
+            "- **EE camp** 0.20 — Cour des Comptes empirics as upper "
+            "  bound, low realisation on the back of construction-time "
             "  overruns and NPS delays.\n"
-            "- **Nuclear camp** argues higher values (>0.70) for the next "
-            "  EPR/SMR generation with a mature supply chain and licensing "
-            "  regime.\n"
-            "- **Existing-fleet / WEITER-SO camps** do not need this "
-            "  parameter — their pathways have no nuclear new-build.\n\n"
+            "- **Neutral / Existing-fleet / WEITER-SO** 0.40 — empirical "
+            "  midpoint of Western FOAK projects.\n"
+            "- **Nuclear camp** 1.00 — next EPR/SMR generation with "
+            "  mature supply chain and licensing regime delivers planned "
+            "  build time.\n\n"
+            "Active only on KKW pathways (KKW-GAS, KKW-H2); existing-"
+            "fleet / WEITER-SO pathways have no nuclear new-build.\n\n"
             "*Sources:* COURDESCOMPTES-FLAM (primary), EDF-HPC, NAO-HPC-2017."
         ),
         source_tag="COURDESCOMPTES-FLAM",
@@ -756,6 +779,23 @@ GROUP_LABELS_EN: dict[str, str] = {
 }
 
 
+def _camp_realization_default(param: str, camp: str) -> float:
+    """Read a realisation-rate world-belief from ``CAMP_RANGES``.
+
+    The ``CAMP_RANGES`` dict has heterogeneous value types per parameter
+    (numeric camp keys + string ``source_tag`` / ``verteilung`` /
+    ``label`` keys), so the raw ``dict.get(...)`` return is typed
+    ``object``. This helper narrows the lookup to a float with a safe
+    fallback for unknown camps.
+    """
+    from enesys.core.camp_ranges import CAMP_RANGES
+
+    raw = CAMP_RANGES[param].get(camp)
+    if isinstance(raw, (int, float)):
+        return float(raw)
+    return 1.0
+
+
 def get_camp_defaults(camp: str) -> dict[str, float]:
     """Return the default slider values for a camp.
 
@@ -768,9 +808,15 @@ def get_camp_defaults(camp: str) -> dict[str, float]:
     from enesys.core.path_model import _co2_price_year
 
     defaults: dict[str, float] = {}
-    # Realisation-rate levers: 1.0 means "no camp effect" (default = no override).
-    defaults["nep_realization_rate"] = 1.0
-    defaults["nuclear_realization_rate"] = 1.0
+    # Realisation-rate levers: pull the camp's own world-belief from
+    # CAMP_RANGES so the slider reflects the active camp instead of
+    # silently sitting at a fixed 1.0. Slider movement still acts as an
+    # override against compute_path; the visible default just tracks
+    # which camp is selected.
+    defaults["nep_realization_rate"] = _camp_realization_default("nep_realization_rate", camp)
+    defaults["nuclear_realization_rate"] = _camp_realization_default(
+        "nuclear_realization_rate", camp
+    )
     defaults["co2_price_eur_t"] = _co2_price_year(2045, camp)
 
     for key, spec in SLIDER_SPEC.items():
@@ -790,6 +836,35 @@ def get_camp_defaults(camp: str) -> dict[str, float]:
             # will not affect the model output.
             defaults[key] = (spec.lo + spec.hi) / 2.0
     return defaults
+
+
+def _widen_specs_to_cover_camps() -> None:
+    """Widen each slider's ``[lo, hi]`` so it always contains every camp default.
+
+    The hand-set ranges in :data:`SLIDER_SPEC` define the intended
+    *exploration* window and are deliberately wider than the camps for
+    some levers (e.g. ``nep_realization_rate`` reaches 1.00 = full plan
+    fulfilment, which no camp assumes). But a camp default must never
+    fall *outside* its slider, or selecting that camp makes the bound
+    widget raise ``StreamlitValueBelow/AboveMinError`` at render time.
+
+    We take the *union* of the hand-set window and the camp envelope —
+    the range is only ever widened, never narrowed — so the exploration
+    headroom is preserved while every camp stays representable. The
+    ``range ⊇ camp envelope`` invariant is pinned by
+    ``tests/consistency/test_slider_camp_ranges.py``.
+    """
+    camp_defaults = [get_camp_defaults(camp[0]) for camp in LAGER_OPTIONS]
+    for key, spec in list(SLIDER_SPEC.items()):
+        vals = [d[key] for d in camp_defaults if key in d]
+        if not vals:
+            continue
+        lo, hi = min(spec.lo, *vals), max(spec.hi, *vals)
+        if lo != spec.lo or hi != spec.hi:
+            SLIDER_SPEC[key] = replace(spec, lo=lo, hi=hi)
+
+
+_widen_specs_to_cover_camps()
 
 
 def build_overrides_from_sliders(

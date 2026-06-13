@@ -46,20 +46,40 @@ def main() -> None:
             "overrides camp defaults per year."
         ),
     )
+    parser.add_argument(
+        "--lang",
+        choices=("de", "en"),
+        default="en",
+        help="Chart language for title, subtitle and in-figure labels (default: en)",
+    )
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
     data = compute_mix_rampup_data(camp=args.camp, param_set=args.param_set)
     suffix = ".svg" if args.variant == "web" else ".png"
     key = args.param_set if args.param_set else data.camp
-    out = args.out / f"{OUT_NAME}_{key}{suffix}"
-    subtitle_set = f"Parameter set: {args.param_set}" if args.param_set else f"Camp: {data.camp}"
+    out = args.out / f"{OUT_NAME}_{key}_{args.lang}{suffix}"
+    if args.param_set:
+        set_label = (
+            "Parameter set" if args.lang == "en" else "Parametersatz"
+        ) + f": {args.param_set}"
+    else:
+        set_label = ("Camp" if args.lang == "en" else "Lager") + f": {data.camp}"
+    title = {
+        "en": "Energy mix ramp-up 2026–2055",
+        "de": "Mix-Hochlauf 2026–2055",
+    }[args.lang]
+    subtitle = {
+        "en": f"Path grid · {set_label}",
+        "de": f"Pfad-Raster · {set_label}",
+    }[args.lang]
     render_mix_rampup_grid(
         data,
         out,
         variant=args.variant,
-        title="Energy mix ramp-up 2026–2055",
-        subtitle=f"Path grid · {subtitle_set}",
+        title=title,
+        subtitle=subtitle,
+        lang=args.lang,
     )
     print(f"Saved: {out}")
 

@@ -222,7 +222,7 @@ def _render_continue(lang: str) -> None:
             if lang == "en"
             else "Zwei Lager nebeneinander vergleichen. Jede Annahme überschreiben."
         )
-        st.markdown(f"#### [{label}](charts)")
+        st.markdown(f"#### [{label}](charts?lang={lang})")
         st.markdown(sub)
     with col_sources:
         label = "📚 Browse the sources" if lang == "en" else "📚 Quellen durchsehen"
@@ -231,7 +231,7 @@ def _render_continue(lang: str) -> None:
             if lang == "en"
             else "Jeder Default im Modell, mit Primärquelle belegt."
         )
-        st.markdown(f"#### [{label}](sources)")
+        st.markdown(f"#### [{label}](sources?lang={lang})")
         st.markdown(sub)
 
 

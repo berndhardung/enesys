@@ -43,20 +43,40 @@ def main() -> None:
         default=None,
         help="External assumption substrate (e.g. ariadne_pypsa).",
     )
+    parser.add_argument(
+        "--lang",
+        choices=("de", "en"),
+        default="en",
+        help="Chart language for title, subtitle and in-figure labels (default: en)",
+    )
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
     data = compute_stress_rampup_data(camp=args.camp, param_set=args.param_set)
     suffix = ".svg" if args.variant == "web" else ".png"
     key = args.param_set if args.param_set else data.camp
-    out = args.out / f"{OUT_NAME}_{key}{suffix}"
-    subtitle_set = f"Parameter set: {args.param_set}" if args.param_set else f"Camp: {data.camp}"
+    out = args.out / f"{OUT_NAME}_{key}_{args.lang}{suffix}"
+    if args.param_set:
+        set_label = (
+            "Parameter set" if args.lang == "en" else "Parametersatz"
+        ) + f": {args.param_set}"
+    else:
+        set_label = ("Camp" if args.lang == "en" else "Lager") + f": {data.camp}"
+    title = {
+        "en": "Stress-test ramp-up 2026–2055 — LOLE-P95 design standard",
+        "de": "Stresstest-Hochlauf 2026–2055 — LOLE-P95-Auslegungsstandard",
+    }[args.lang]
+    subtitle = {
+        "en": f"LOLE-P95 dark-doldrum reserve per path (BMWK reliability 2.77 h/a) · {set_label}",
+        "de": f"LOLE-P95-Dunkelflauten-Reserve je Pfad (BMWK-Versorgungssicherheit 2,77 h/a) · {set_label}",
+    }[args.lang]
     render_stress_rampup_grid(
         data,
         out,
         variant=args.variant,
-        title="Stress-test ramp-up 2026–2055 — LOLE-P95 design standard",
-        subtitle=f"LOLE-P95 dark-doldrum reserve per path (BMWK reliability 2.77 h/a) · {subtitle_set}",
+        title=title,
+        subtitle=subtitle,
+        lang=args.lang,
     )
     print(f"Saved: {out}")
 

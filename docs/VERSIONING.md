@@ -17,6 +17,21 @@ model) lives separately — see the note at the end.
   backward compatibility applies here — a 0.1.2 must serve as a
   drop-in replacement for 0.1.1.
 
+## Scope of the contract
+
+SemVer applies to the **`enesys` model API** (`enesys.core` /
+`enesys.viz`) — the importable library that is the actual work. The
+**Streamlit app**, the **`examples/` generator scripts** and the
+**build tooling** are presentation and tooling layers that evolve
+*outside* the SemVer contract.
+
+Practical consequence: improvements to the app (rendering speed, UX) and
+to the examples — and the bug fixes against them — ride **PATCH**
+releases. They are not "features" of the versioned product. A **MINOR**
+bump is reserved for the first genuine new model-API capability. This
+keeps the number tracking model evolution instead of inflating on every
+visualisation tweak.
+
 ## Current state
 
 The current version state is determined by the

@@ -207,6 +207,11 @@ def tornado_path_analysis(
     return sorted(results, key=lambda r: -r["swing"])
 
 
+# Prozess-weiter Memo-Cache für monte_carlo_all_paths (deterministisch je
+# Argument-Tupel). Read-only-Ergebnisse; FIFO-begrenzt auf 64 Einträge.
+_MC_ALL_PATHS_CACHE: dict[tuple, dict] = {}
+
+
 def monte_carlo_all_paths(
     *,
     year: int = 2026,
@@ -256,8 +261,28 @@ def monte_carlo_all_paths(
             "p95_per_path": dict[str, float],
             "use_correlations": bool,  # immer False in Mengen-Bilanz-Variante
         }
+
+    Memoisierung: die Funktion ist deterministisch (geseedeter RNG) und rein
+    bezüglich ihrer Argumente. Identische Aufrufe (z. B. derselbe
+    ``n_runs=3000, seed=42``-Lauf in mehreren Tests, oder der Anker-Lauf
+    beim Streamlit-Sprachwechsel) liefern denselben gecachten dict zurück.
+    Das Ergebnis ist als **read-only** zu behandeln — Konsumenten kopieren
+    bei Bedarf (``np.array(...)``). Cache ist auf 64 Einträge begrenzt.
     """
     import numpy as np  # noqa: PLC0415
+
+    cache_key = (
+        year,
+        window,
+        n_year_samples,
+        baseline_camp,
+        n_runs,
+        seed,
+        tuple(sorted(baseline_overrides.items())) if baseline_overrides else None,
+    )
+    cached = _MC_ALL_PATHS_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
 
     rng = np.random.default_rng(seed)
 
@@ -337,7 +362,7 @@ def monte_carlo_all_paths(
         label: prices_arr[:, p_idx].copy() for p_idx, label in enumerate(path_labels)
     }
 
-    return {
+    result = {
         "n_runs": n_runs,
         "prices_per_path": prices,
         "p_ee_gas_wins_vs": p_ee_gas_wins_vs,
@@ -349,6 +374,12 @@ def monte_carlo_all_paths(
         "p95_per_path": {label: float(np.percentile(prices[label], 95)) for label in path_labels},
         "use_correlations": False,
     }
+
+    # Crude FIFO-Begrenzung: bei Überlauf den ältesten Eintrag verwerfen.
+    if len(_MC_ALL_PATHS_CACHE) >= 64:
+        _MC_ALL_PATHS_CACHE.pop(next(iter(_MC_ALL_PATHS_CACHE)))
+    _MC_ALL_PATHS_CACHE[cache_key] = result
+    return result
 
 
 def damage_asymmetry_settings(

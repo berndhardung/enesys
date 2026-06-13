@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] — 2026-06-13 — Streamlit performance, bilingual chart export, fixes
+
+Patch release — visualisation performance and bug fixes; no model-API change.
+
+### Added
+
+- **`--lang {de,en}` on the standalone chart generators** — each chart
+  renders in a single language and the output filename gets a `_de` /
+  `_en` suffix. Default `en`; both via `make build-charts LANGS="de en"`.
+
+### Changed
+
+- **Streamlit compare view substantially faster** — renders one chart at
+  a time (chart switcher; "All charts" restores the full view), reuses
+  cached model data on language/layout switches, and caches rendered
+  charts to disk. First paint now costs one chart instead of six.
+- Internal test-suite speedups.
+
+### Fixed
+
+- **Mixed-language chart images** — generators emitted an English title
+  over a German body; charts are now consistently one language.
+- **Monte-Carlo win-probability axis** labelled the wrong way round — now
+  "EE-GAS win probability vs. each path".
+- **Dead "sources" deep-link** in the Streamlit app under Streamlit ≥1.36
+  path-based routing.
+- **Crash when selecting the `weiterso_optimistic` camp** — slider ranges
+  now always cover every camp default.
+
 ## [0.2.0] — 2026-06-07 — Streamlit UI, English documentation, regret-robustness API
 
 This release adds:

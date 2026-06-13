@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use enesys in research or publication, please cite as below."
 title: "enesys — Energy-system model with camp-symmetric ranges and forward-cost methodology"
-version: 0.2.0
-date-released: 2026-06-07
+version: 0.2.1
+date-released: 2026-06-13
 abstract: >-
   Reproducible open-source energy-system model for Germany 2026–2055.
   Quantity-balance architecture with forward-cost convention (sunk

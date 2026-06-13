@@ -72,6 +72,12 @@ def main() -> None:
         default=42,
         help="RNG seed for reproducibility (default: 42)",
     )
+    parser.add_argument(
+        "--lang",
+        choices=("de", "en"),
+        default="en",
+        help="Chart language for title, subtitle and in-figure labels (default: en)",
+    )
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -84,14 +90,28 @@ def main() -> None:
     )
     suffix = ".svg" if args.variant == "web" else ".png"
     key = args.param_set if args.param_set else args.camp
-    out = args.out / f"{OUT_NAME}_{key}{suffix}"
-    subtitle_set = f"Parameter set: {args.param_set}" if args.param_set else f"Camp: {args.camp}"
+    out = args.out / f"{OUT_NAME}_{key}_{args.lang}{suffix}"
+    if args.param_set:
+        set_label = (
+            "Parameter set" if args.lang == "en" else "Parametersatz"
+        ) + f": {args.param_set}"
+    else:
+        set_label = ("Camp" if args.lang == "en" else "Lager") + f": {args.camp}"
+    title = {
+        "en": "Monte-Carlo robustness: distribution across all paths",
+        "de": "Monte-Carlo-Robustheit: Verteilung über alle Pfade",
+    }[args.lang]
+    subtitle = {
+        "en": f"{data.n_runs} assumption draws · seed {data.seed} · {set_label}",
+        "de": f"{data.n_runs} Annahmen-Ziehungen · Seed {data.seed} · {set_label}",
+    }[args.lang]
     render_monte_carlo(
         data,
         out,
         variant=args.variant,
-        title="Monte-Carlo robustness: distribution across all paths",
-        subtitle=(f"{data.n_runs} assumption draws · seed {data.seed} · {subtitle_set}"),
+        title=title,
+        subtitle=subtitle,
+        lang=args.lang,
     )
     print(f"Saved: {out}")
 

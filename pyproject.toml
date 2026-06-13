@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "enesys"
-version = "0.2.0"
+version = "0.2.1"
 description = "Forward-cost analysis of Germany's energy transition — 6 paths, Monte-Carlo, fully open and reproducible"
 readme = "README.md"
 requires-python = ">=3.10"

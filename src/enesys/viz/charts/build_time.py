@@ -207,7 +207,8 @@ def render_build_time_empirics(
         ax.text(
             bar.get_x() + bar.get_width() / 2,
             val_total + 0.3,
-            f"{val_total} y\n({val_bauzeit} c)",
+            f"{val_total} {_label('build_time.unit_total', lang)}\n"
+            f"({val_bauzeit} {_label('build_time.unit_construction', lang)})",
             ha="center",
             va="bottom",
             fontsize=PRINT_FONT_SIZE_BAR_LABEL,
@@ -220,7 +221,8 @@ def render_build_time_empirics(
         ax.text(
             bar.get_x() + bar.get_width() / 2,
             val_total + 0.3,
-            f"{val_total} y{marker}\n({val_bauzeit} c)",
+            f"{val_total} {_label('build_time.unit_total', lang)}{marker}\n"
+            f"({val_bauzeit} {_label('build_time.unit_construction', lang)})",
             ha="center",
             va="bottom",
             fontsize=PRINT_FONT_SIZE_BAR_LABEL,

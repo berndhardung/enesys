@@ -38,10 +38,11 @@ CHART_LABELS: dict[ChartLang, dict[str, str]] = {
         # --- tornado (tornado_sensitivity) ---
         "tornado.xlabel": "Forward Cost (ct/kWh)",
         "tornado.subtitle_suffix": " · Tornado",
+        "tornado.baseline": "Basis",
         # --- montecarlo ---
         "montecarlo.ylabel": "Forward Cost (ct/kWh)",
         "montecarlo.violin_title": "LCOE-Verteilung pro Pfad",
-        "montecarlo.winprob_xlabel": "Gewinnwahrscheinlichkeit vs. {ref}",
+        "montecarlo.winprob_xlabel": "{ref}-Gewinnwahrscheinlichkeit je Pfad",
         "montecarlo.winprob_title": "Gewinn­wahrscheinlichkeit",
         # --- build_time ---
         "build_time.fid_lead_time": "FID-Vorlauf (Politik-Beschluss → Spatenstich)",
@@ -49,6 +50,8 @@ CHART_LABELS: dict[ChartLang, dict[str, str]] = {
         "build_time.realised": "Realisierte / laufende Bauzeit",
         "build_time.corridor": "Empirie-Korridor (Gesamt-Frist {low}–{high} Jahre)",
         "build_time.ylabel": "Jahre vom Politik-Beschluss bis IBN",
+        "build_time.unit_total": "J",
+        "build_time.unit_construction": "B",
     },
     "en": {
         # --- shared ---
@@ -70,10 +73,11 @@ CHART_LABELS: dict[ChartLang, dict[str, str]] = {
         # --- tornado ---
         "tornado.xlabel": "Forward cost (ct/kWh)",
         "tornado.subtitle_suffix": " · Tornado",
+        "tornado.baseline": "Baseline",
         # --- montecarlo ---
         "montecarlo.ylabel": "Forward cost (ct/kWh)",
         "montecarlo.violin_title": "LCOE distribution per path",
-        "montecarlo.winprob_xlabel": "Win probability vs. {ref}",
+        "montecarlo.winprob_xlabel": "{ref} win probability vs. each path",
         "montecarlo.winprob_title": "Win probability",
         # --- build_time ---
         "build_time.fid_lead_time": "FID lead time (decision → groundbreaking)",
@@ -81,6 +85,8 @@ CHART_LABELS: dict[ChartLang, dict[str, str]] = {
         "build_time.realised": "Realised / current construction time",
         "build_time.corridor": "Empirical corridor (total lead time {low}–{high} years)",
         "build_time.ylabel": "Years from political decision to IBN",
+        "build_time.unit_total": "y",
+        "build_time.unit_construction": "c",
     },
 }
 

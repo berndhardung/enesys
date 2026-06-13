@@ -525,7 +525,8 @@ ee_opt 2046.
 
 Modell-Empirie-Korridor: 13–17 a Bauzeit + 3–8 a FID-Vorlauf
 → Gesamt-Frist Politik-Beschluss → IBN 16–22 a. Siehe Chart in
-`examples/nuclear_build_time_empirics.png`.
+`examples/nuclear_build_time_empirics_en.png` (bzw. `_de` mit
+`--lang de`).
 
 ### `nuclear_target_gw_2050`
 

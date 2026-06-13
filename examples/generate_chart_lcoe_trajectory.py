@@ -52,20 +52,40 @@ def main() -> None:
             "(e.g. ariadne_pypsa). When set, overrides camp defaults per year."
         ),
     )
+    parser.add_argument(
+        "--lang",
+        choices=("de", "en"),
+        default="en",
+        help="Chart language for title, subtitle and in-figure labels (default: en)",
+    )
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
     data = compute_trajectory_data(camp=args.camp, param_set=args.param_set)
     suffix = ".svg" if args.variant == "web" else ".png"
     key = args.param_set if args.param_set else args.camp
-    out = args.out / f"{OUT_NAME}_{key}{suffix}"
-    subtitle_set = f"Parameter set: {args.param_set}" if args.param_set else f"Camp: {args.camp}"
+    out = args.out / f"{OUT_NAME}_{key}_{args.lang}{suffix}"
+    if args.param_set:
+        set_label = (
+            "Parameter set" if args.lang == "en" else "Parametersatz"
+        ) + f": {args.param_set}"
+    else:
+        set_label = ("Camp" if args.lang == "en" else "Lager") + f": {args.camp}"
+    title = {
+        "en": f"Rolling 30-year LCOE per investment start year (2026–{2026 + 29})",
+        "de": f"Rollierende 30-Jahres-LCOE je Investitions-Startjahr (2026–{2026 + 29})",
+    }[args.lang]
+    subtitle = {
+        "en": f"Six paths · lifecycle LCOE + path spread · {set_label}",
+        "de": f"Sechs Pfade · Lebenszyklus-LCOE + Pfad-Spannweite · {set_label}",
+    }[args.lang]
     render_lcoe_trajectory(
         data,
         out,
         variant=args.variant,
-        title=f"Rolling 30-year LCOE per investment start year (2026–{2026 + 29})",
-        subtitle=f"Six paths · lifecycle LCOE + path spread · {subtitle_set}",
+        title=title,
+        subtitle=subtitle,
+        lang=args.lang,
     )
     print(f"Saved: {out}")
 

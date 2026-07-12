@@ -88,6 +88,52 @@ parameter values, however, are cleanly grounded in primary sources
 and not anti-nuclear. Nuclear CAPEX (10,806 EUR/kW, Lazard 16.0) is
 almost identical to enesys-neutral (11,000 EUR/kW).
 
+### nea_pcge
+
+IEA/NEA PCGE 2020 (9th ed.) — nuclear-leaning substrate (OECD-Europe
+median, WACC 7 % real, USD_2018 → EUR_2025 real-to-real).
+
+- **Source:** IEA/NEA (2020), *Projected Costs of Generating
+  Electricity 2020*, Tab. 3.2–3.6 / 2.1 / 8.1
+- **Knot years:** 2030 / 2040 / 2050 (PCGE is a 2025-commissioning
+  snapshot — values time-constant, no EE learning rate)
+- **Price basis:** EUR_2025
+
+**Deliberate nuclear-leaning asymmetry.** PCGE prices nuclear Long-Term
+Operation (LTO) very cheaply because the LTO overnight investment sits on
+top of an already-amortised existing fleet (sunk-cost discount in the
+LCOE framework). Combined with the 7 % real WACC standard column (vs.
+ariadne's 5.36 %) this is the symmetric counterpart to the EE-near
+substrates: a path ranking that survives under *both* the EE-friendly
+(ariadne / ise_lcoe) and the nuclear-friendly (nea) assumption sets is
+the point of the cross-check.
+
+### ise_lcoe
+
+Fraunhofer ISE *Stromgestehungskosten Erneuerbare Energien* 2024 — a
+German, EE-near **cost** substrate that also covers nuclear.
+
+- **Source:** Fraunhofer ISE (July 2024), Kost et al. — Tab. 1 (CAPEX),
+  Tab. 2 (real WACC / OPEX / lifetime), Tab. 5 (fuel prices)
+- **Knot years:** 2024 / 2035 / 2045 (PV carries a learning curve, most
+  other techs time-constant)
+- **Price basis:** EUR_2024 → EUR_2025 (real uplift ×1.02, German HICP)
+
+**Source, not camp.** ISE's EE-friendly headline ("PV and wind are the
+cheapest of all plant types") stems from a *system* assumption —
+declining full-load hours of dispatchable plants in an EE-dominated
+system (Tab. 4) — not from biased cost inputs. On the parameter level
+the study is not anti-nuclear: nuclear CAPEX midpoint (~11,000 EUR/kW
+from the 6,000–16,000 band) is almost identical to enesys-neutral. Only
+the **cost** parameters (CAPEX, WACC, OPEX, fuel prices) are imported;
+the ISE VLH assumption is deliberately *not* applied as an override —
+symmetric to ariadne_pypsa and nea_pcge, which also leave VLH to the
+enesys system state. This keeps the cross-check apples-to-apples: only
+the cost substrate is swapped. Under the ISE substrate BESTAND narrowly
+overtakes KKW-H2 as the most expensive path (both in the expensive
+cluster within ~0.2 ct/kWh); the structural claims (EE-GAS in top-2,
+KKW paths not cheaper than EE paths of the same variant) survive.
+
 
 ## How do I add a new set?
 

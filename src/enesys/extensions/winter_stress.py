@@ -123,7 +123,7 @@ class WinterStressParams:
     )
 
     # Importe begrenzt: -- bei pan-europäischer Dunkelflaute schließen Nachbarn
-    import_max_gw: float = 8.0  # 8 GW realistisches Import-Cap  [CALIBRATED: ENTSO-E ERAA-2023 — pan-europäische Dunkelflaute-Korrelation 70-80%]
+    import_max_gw: float = 8.0  # 8 GW realistisches Import-Cap (Event-Mittel)  [CALIBRATED: ENTSO-E ERAA-2023 — pan-europäische Dunkelflaute-Korrelation 70-80%; VERMEER-2023 (DLR/KIT, AMIRIS) bestätigt Richtung: effektiver Importbeitrag kollabiert in den tiefsten Knappheitsstunden → vermeer_import_collapse_winter_stress_params() härtet auf 4 GW]
 
     # Härtungs-Parameter (Default = neutral; die LOLE-P99-Variante
     # setzt diese Werte über `lole_p99_winter_stress_params()`).
@@ -280,6 +280,44 @@ def lole_p99_winter_stress_params() -> WinterStressParams:
     )
 
 
+def vermeer_import_collapse_winter_stress_params() -> WinterStressParams:
+    """P99-Härtung mit kollabierendem Importbeitrag (VERMEER-Anker).
+
+    Externer Plausibilitäts-Anker für die Import-Annahme, getrennt
+    von der P99-Default-Leiter (ergänzt sie als zusätzliche
+    Robustheitsspalte, ersetzt sie nicht). Beantwortet die Frage:
+    bleibt die Pfad-Reihenfolge stabil, wenn man VERMEERs Befund zum
+    transnationalen Handel in der korrelierten Dunkelflaute übernimmt?
+
+    Quelle: VERMEER-Schlussbericht (DLR/KIT, FKZ 03EI1010,
+    elib.dlr.de/196641). AMIRIS-Marktkopplung über Europa, TYNDP-2022
+    "Distributed Energy", Modelljahr 2035, 14-Tage-Extremereignis
+    kalibriert am Winter 1996/97. Kernbefund: in den tiefsten
+    Knappheitsstunden geht der effektive Importbeitrag gegen null —
+    die Nachbarn sind gleichzeitig knapp (BE/FR/NL) oder die Leitungen
+    voll ausgelastet (AT/CH/CZ/PL/SE/NO). Eine Erhöhung der
+    Austauschkapazität auf 120 %/150 % entlastet die Knappheit nicht
+    wesentlich; es verbleibt zusätzlicher Bedarf an gesicherter
+    Kraftwerksleistung.
+
+    Einzige Härtung gegenüber `lole_p99_winter_stress_params()`:
+
+    - **Import-Cap 4 statt 8 GW.** `import_max_gw` ist ein Event-Mittel
+      über `duration_hours`, kein Stunden-Peak — VERMEERs "Importe → 0"
+      gilt für die ~7 tiefsten Knappheitsstunden des 14-Tage-Events,
+      nicht für das 14-Tage-Mittel. 4 GW = halbe Default-Headroom:
+      kodiert die korrelierte Nicht-Verfügbarkeit, ohne die
+      Konservativismen zur physikalisch unplausiblen Voll-Isolation
+      (0 GW) zu stapeln. Default/P95 8 → VERMEER 4.
+
+    Die übrigen P99-Härtungen (Dauer, CF, Backup-Verfügbarkeit,
+    Mehrfach-Event) bleiben unverändert.
+    """
+    ws = lole_p99_winter_stress_params()
+    ws.import_max_gw = 4.0  # VERMEER: Importkollaps in korrelierter DKF (Event-Mittel)
+    return ws
+
+
 @dataclass
 class WinterStressResult:
     model: str  # Pfadname: "WEITER-SO", "EE-GAS", "EE-H2", "KKW-GAS", "KKW-H2"
@@ -290,7 +328,12 @@ class WinterStressResult:
     coverage_total_gw: float
     deficit_gw: float  # ungedeckte Lücke (>0 = Blackout-Risiko)
     energy_deficit_twh: float  # Energie-Lücke über Dauer
-    cost_premium_eur_mwh: float  # Preisaufschlag in dieser Phase
+    # Preisaufschlag als Phasen-MITTEL über die Dunkelflaute, nicht als
+    # Stunden-Peak. VERMEER-Anker (DLR/KIT, AMIRIS): mittlerer Anstieg
+    # DE +237 €/MWh im 14-Tage-Event — deckt sich mit den Nicht-Defizit-
+    # Stufen (200-350). Der Stunden-Peak liegt höher: VERMEER zeigt 7 h
+    # am Price-Cap von 10.000 €/MWh; reale Dez-2024-Spitze ~960 €/MWh.
+    cost_premium_eur_mwh: float  # Preisaufschlag (Phasen-Mittel) in dieser Phase
     storage_drain_twh: float  # Speicher-Entladung
 
 

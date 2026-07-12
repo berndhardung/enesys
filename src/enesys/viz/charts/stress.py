@@ -438,7 +438,7 @@ def render_stress_rampup_grid(
             legend_h,
             legend_l,
             loc="lower center",
-            bbox_to_anchor=(0.5, -0.02),
+            bbox_to_anchor=(0.5, -0.06),
             ncol=6,
             fontsize=PRINT_FONT_SIZE_LEGEND,
             frameon=False,
@@ -457,7 +457,7 @@ def render_stress_rampup_grid(
     if variant == "mobile":
         plt.tight_layout(rect=(0, 0.08, 1, 1.0), h_pad=2.5)
     else:
-        plt.tight_layout(rect=(0, 0.06, 1, 0.96 if variant == "standalone" and title else 1.0))
+        plt.tight_layout(rect=(0, 0.10, 1, 0.96 if variant == "standalone" and title else 1.0))
     add_oss_footer(fig)
 
     if return_fig:

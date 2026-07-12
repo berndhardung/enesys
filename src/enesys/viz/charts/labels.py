@@ -52,6 +52,22 @@ CHART_LABELS: dict[ChartLang, dict[str, str]] = {
         "build_time.ylabel": "Jahre vom Politik-Beschluss bis IBN",
         "build_time.unit_total": "J",
         "build_time.unit_construction": "B",
+        "build_time.footnote_projected": "* projizierte IBN — Projekt noch nicht in Betrieb",
+        # --- regret_matrix (kosten_matrix) ---
+        "regret_matrix.world.ee_optimistic": "EE-Lager",
+        "regret_matrix.world.neutral_default": "Neutral",
+        "regret_matrix.world.atom_optimistic": "Atom-Lager",
+        "regret_matrix.world.bestand_optimistic": "Bestand",
+        "regret_matrix.bar_header": "Kosten des Irrtums\nMrd €/Jahr · schlimmstenfalls",
+        "regret_matrix.winner_tag": "← robusteste Wette",
+        "regret_matrix.footnote": (
+            "★ = günstigster Pfad in dieser Welt · Reue = LCOE − Welt-Minimum · "
+            "Quelle: Savage-Minimax-Reue-Matrix"
+        ),
+        "regret_matrix.footnote_fullsystem": (
+            "★ = günstigster Pfad in dieser Welt · Reue = Voll-System-LCOE − Welt-Minimum · "
+            "LCOE = Gesamt-Energiesystem (Strom + nicht elektrifizierte fossile Wärme/Mobilität)"
+        ),
     },
     "en": {
         # --- shared ---
@@ -87,6 +103,22 @@ CHART_LABELS: dict[ChartLang, dict[str, str]] = {
         "build_time.ylabel": "Years from political decision to IBN",
         "build_time.unit_total": "y",
         "build_time.unit_construction": "c",
+        "build_time.footnote_projected": "* projected commissioning — project not yet in operation",
+        # --- regret_matrix (kosten_matrix) ---
+        "regret_matrix.world.ee_optimistic": "Renewables camp",
+        "regret_matrix.world.neutral_default": "Middle",
+        "regret_matrix.world.atom_optimistic": "Nuclear camp",
+        "regret_matrix.world.bestand_optimistic": "Existing fleet",
+        "regret_matrix.bar_header": "Cost of being wrong\nbn €/yr · worst case",
+        "regret_matrix.winner_tag": "← most robust bet",
+        "regret_matrix.footnote": (
+            "★ = cheapest path in this world · regret = LCOE − world minimum · "
+            "source: Savage minimax-regret matrix"
+        ),
+        "regret_matrix.footnote_fullsystem": (
+            "★ = cheapest path in this world · regret = full-system LCOE − world minimum · "
+            "LCOE = whole energy system (electricity + non-electrified fossil heat/mobility)"
+        ),
     },
 }
 

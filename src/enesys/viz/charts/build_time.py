@@ -263,6 +263,20 @@ def render_build_time_empirics(
     if variant == "standalone" and title:
         plt.subplots_adjust(top=0.90)
     plt.subplots_adjust(bottom=0.18)
+
+    # Fußnote erklärt den ``*``-Marker an noch nicht in Betrieb genommenen
+    # Projekten (siehe Bar-Labels oben). Nur rendern, wenn mindestens ein
+    # Projekt unrealisiert ist — sonst stünde ein erklärungsloser Hinweis.
+    if any(not p.realisiert for p in projekte):
+        fig.text(
+            0.01,
+            0.005,
+            _label("build_time.footnote_projected", lang),
+            fontsize=PRINT_FONT_SIZE_BASE,
+            color="#666",
+            ha="left",
+            va="bottom",
+        )
     add_oss_footer(fig)
 
     if return_fig:

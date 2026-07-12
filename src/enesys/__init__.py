@@ -135,6 +135,7 @@ from enesys.extensions.landuse import (
 from enesys.extensions.winter_stress import (
     WinterStressParams,
     lole_p99_winter_stress_params,
+    vermeer_import_collapse_winter_stress_params,
     winter_stress_balance,
     winter_stress_test,
 )
@@ -158,6 +159,7 @@ __all__ = [
     "compute_path",
     "winter_stress_test",
     "lole_p99_winter_stress_params",
+    "vermeer_import_collapse_winter_stress_params",
     # 6-Pfad-Sensitivitätsanalyse — Datenstrukturen (Slider-Bridge)
     "PATH_NAMES",
     "PATH_COLORS",

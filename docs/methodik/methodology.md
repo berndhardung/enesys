@@ -60,6 +60,16 @@ defaults — one per camp:
 See [`core/camp_ranges.py`](../../src/enesys/core/camp_ranges.py) for the
 parameter table.
 
+**Design intent.** Each camp's parameter values are the values that
+advocacy position would actually defend in a policy debate — not
+analyst-assigned probability distributions. The uncertainty set is
+structured by advocacy position rather than analyst probability: every
+contested parameter carries the most favourable value that camp's
+published arguments support, so each camp receives its own preferred
+pathway as the point-estimate outcome. This makes the robustness result
+legible and hard to dismiss: the opposing camp was given its best case
+and still loses on regret.
+
 **The methodological pointe.** Under the four camp-defaults the point-
 estimate winner across the full six-path set shifts substantially —
 Rolling-LCOE 2026-2055: `neutral_default` → EE-GAS (16,79 ct/kWh),
@@ -327,9 +337,23 @@ The approach combines several established techniques:
   finance, less common in energy policy.
 - **Tornado sensitivity analysis** — standard in decision analysis
   (Howard, Raiffa).
-- **Camp-symmetric assumption substrates** — adapted from adversarial
-  robustness principles: conclusions survive only if they hold under the
-  most aggressive parameter substrate the opposing position would accept.
+- **Minimax-regret decision criterion** — Loulou & Kanudia (1999,
+  *Operations Research Letters* 25) first applied this technique to GHG
+  abatement pathway selection in ESOM analysis. In their notation each
+  scenario functions as a *state of the world*; enesys applies the same
+  criterion but sources the states from documented advocacy positions
+  rather than analyst-assigned probability scenarios.
+- **Camp-symmetric assumption substrates** — the uncertainty set is
+  structured by advocacy position rather than analyst probability.
+  Each contested parameter carries the value each camp would actually
+  defend in a policy debate; the point estimate is calibrated so each
+  camp gets its own preferred pathway; the recommendation is the
+  minimax-regret choice across those camp-defined worlds. The result is
+  legible and hard to dismiss in a polarised debate: the opposing camp
+  received its best case and still loses on regret. Follows DeCarolis
+  et al. (2017, *Renewable and Sustainable Energy Reviews* 78)
+  best-practice guidance on ESOM uncertainty quantification while
+  extending it to advocacy-sourced scenario sets.
 - **Source traceability via `[SRC: TAG]` annotations** — every default
   parameter carries a tag that resolves to a primary source in
   [SOURCES.md](../SOURCES.md); enforced by

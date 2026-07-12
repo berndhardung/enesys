@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-07-12 — New cost substrate, regret-matrix chart, path-measures API
+
+Minor release — first genuine new model-API capability since 0.2.x.
+
+### Added
+
+- **Cost-substrate family now spans three camp-aligned positions.**
+  New renewables-leaning substrate `ise_lcoe` (Fraunhofer ISE
+  "Stromgestehungskosten Erneuerbare Energien" 2024) — a German cost
+  substrate that also covers nuclear, verified against the primary
+  source (Tab. 1/2/5) with a new convergence test (7 slots). Alongside
+  it, the nuclear-leaning substrate `nea_pcge` (IEA/NEA, *Projected
+  Costs of Generating Electricity*, 2020, 9th ed. — OECD-Europe median,
+  WACC 7% real) is now documented in `docs/PARAM_SETS.md` for the first
+  time, next to the existing neutral `ariadne_pypsa` substrate.
+  Methodological notes cover the "source, not camp" framing and the
+  nuclear-leaning asymmetry.
+- **`enesys.viz.charts.regret_matrix`** — a new chart type: a path×camp
+  full-system cost matrix (six policy paths × four camp worlds), cell colour
+  encodes regret, bars show maximum regret per path. Ships as a comparable
+  horizon pair (today 2026-2055 vs. children 2055-2084 steady state, full
+  nuclear fleet online) with a shared bar scale. New standalone generator:
+  `examples/generate_chart_regret_matrix.py`.
+- **`enesys.core.path_measures`** — a new module computing, per policy path,
+  a neutral list of preconditions/measures (deadline, realization rate,
+  build-time provenance) framed as "what would have to happen, by when, for
+  this path to work out." Library-only so far — not yet wired into the
+  Streamlit UI.
+
+### Changed
+
+- Nothing breaking — all additions are purely additive to the `enesys`
+  model API.
+
 ## [0.2.1] — 2026-06-13 — Streamlit performance, bilingual chart export, fixes
 
 Patch release — visualisation performance and bug fixes; no model-API change.

@@ -28,6 +28,10 @@ from typing import Any
 from enesys.viz.charts.build_time import compute_build_time_data, render_build_time_empirics
 from enesys.viz.charts.montecarlo import compute_monte_carlo_data, render_monte_carlo
 from enesys.viz.charts.rampup import compute_mix_rampup_data, render_mix_rampup_grid
+from enesys.viz.charts.regret_matrix import (
+    compute_fullsystem_matrix_data,
+    render_regret_matrix,
+)
 from enesys.viz.charts.stress import compute_stress_rampup_data, render_stress_rampup_grid
 from enesys.viz.charts.tornado import compute_tornado_data, render_tornado_sensitivity
 from enesys.viz.charts.trajectory import compute_trajectory_data, render_lcoe_trajectory
@@ -63,6 +67,17 @@ class ChartSpec:
     compute: Callable[..., Any]
     render: Callable[..., Any]
     varies_with_camp: bool = True
+
+
+# Reue-Matrix: cross-camp + statisch — die compute-Wrapper ignorieren camp/
+# param_overrides bewusst (alle vier Lager *sind* die Spalten; Slider treiben
+# die Reue nicht). Zwei Horizonte teilen einen Renderer: heute vs. Steady-State.
+def _compute_regret_today(**_: Any) -> Any:
+    return compute_fullsystem_matrix_data(2026)
+
+
+def _compute_regret_children(**_: Any) -> Any:
+    return compute_fullsystem_matrix_data(2055)
 
 
 CHARTS: tuple[ChartSpec, ...] = (
@@ -107,6 +122,22 @@ CHARTS: tuple[ChartSpec, ...] = (
         title_en="Nuclear build-time empirics",
         compute=compute_build_time_data,
         render=render_build_time_empirics,
+        varies_with_camp=False,
+    ),
+    ChartSpec(
+        chart_id="regret_today",
+        title_de="Kosten des Irrtums — heute (2026–2055)",
+        title_en="Cost of being wrong — today (2026–2055)",
+        compute=_compute_regret_today,
+        render=render_regret_matrix,
+        varies_with_camp=False,
+    ),
+    ChartSpec(
+        chart_id="regret_children",
+        title_de="Kosten des Irrtums — die Rechnung der Kinder (2055–2084)",
+        title_en="Cost of being wrong — the bill we hand our children (2055–2084)",
+        compute=_compute_regret_children,
+        render=render_regret_matrix,
         varies_with_camp=False,
     ),
 )

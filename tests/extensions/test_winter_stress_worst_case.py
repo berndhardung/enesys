@@ -13,6 +13,7 @@ from enesys import (
     Demand,
     TimePathParams,
     lole_p99_winter_stress_params,
+    vermeer_import_collapse_winter_stress_params,
     winter_stress_test,
 )
 
@@ -38,6 +39,11 @@ def test_worst_case_factory_sets_all_hardenings():
     assert ws.wind_capacity_factor < 0.10, "Worst-Case muss Wind-CF strikt unter Default 10% setzen"
     assert ws.backup_availability < 1.0, "Worst-Case muss Backup-Verfügbarkeit unter 100% setzen"
     assert ws.multi_event_factor > 1.0, "Worst-Case muss Mehrfach-Event-Faktor über 1 setzen"
+    # P99-Default lässt den Import beim Event-Mittel (8 GW) — der
+    # Import-Kollaps ist der VERMEER-Variante vorbehalten, nicht P99.
+    assert ws.import_max_gw == 8.0, (
+        "P99 darf das Import-Cap nicht selbst absenken (das ist die VERMEER-Variante)"
+    )
 
 
 def test_worst_case_defizite_strikt_hoeher_als_default_2045():
@@ -157,4 +163,48 @@ def test_default_test_unveraendert_durch_worst_case_haertungen():
     assert abs(res["EE-GAS"].deficit_gw - res["EE-H2"].deficit_gw) < 0.5, (
         f"EE-Pfad-Symmetrie verletzt: EE-GAS {res['EE-GAS'].deficit_gw:.2f} "
         f"vs EE-H2 {res['EE-H2'].deficit_gw:.2f} GW."
+    )
+
+
+# =============================================================================
+# VERMEER-Variante: Import-Kollaps als zusätzliche Robustheitsspalte
+# =============================================================================
+
+
+def test_vermeer_erbt_p99_haertung_und_senkt_nur_import():
+    """vermeer_import_collapse erbt alle P99-Härtungen und ändert
+    ausschließlich das Import-Cap auf 4 GW (P99 bleibt bei 8 GW)."""
+    p99 = lole_p99_winter_stress_params()
+    vm = vermeer_import_collapse_winter_stress_params()
+    assert vm.import_max_gw == 4.0, "VERMEER-Variante muss Import auf 4 GW härten"
+    assert p99.import_max_gw == 8.0, "P99-Default bleibt bei 8 GW (Event-Mittel)"
+    # Alle übrigen P99-Härtungen unverändert übernommen.
+    assert vm.duration_hours == p99.duration_hours
+    assert vm.pv_capacity_factor == p99.pv_capacity_factor
+    assert vm.wind_capacity_factor == p99.wind_capacity_factor
+    assert vm.backup_availability == p99.backup_availability
+    assert vm.multi_event_factor == p99.multi_event_factor
+
+
+def test_vermeer_defizit_hoeher_als_p99_pfad_reihenfolge_stabil():
+    """VERMEER-Variante zeigt bei jedem Pfad ein ≥ P99-Defizit, und die
+    Pfad-Reihenfolge bleibt identisch (uniformer Import-Shift, keine
+    Umsortierung). Robustheits-Aussage des Gegenchecks.
+    """
+    d, tp = _setup()
+    res_p99 = winter_stress_test(2055, d, tp, ws=lole_p99_winter_stress_params())
+    res_vm = winter_stress_test(2055, d, tp, ws=vermeer_import_collapse_winter_stress_params())
+
+    paths = ["WEITER-SO", "EE-GAS", "EE-H2", "KKW-GAS", "KKW-H2", "BESTAND"]
+    for p in paths:
+        assert res_vm[p].deficit_gw >= res_p99[p].deficit_gw, (
+            f"{p}: VERMEER-Defizit ({res_vm[p].deficit_gw:.2f}) muss ≥ "
+            f"P99 ({res_p99[p].deficit_gw:.2f}) sein."
+        )
+
+    # Pfad-Reihenfolge (nach Defizit) identisch unter P99 und VERMEER.
+    order_p99 = sorted(paths, key=lambda p: res_p99[p].deficit_gw)
+    order_vm = sorted(paths, key=lambda p: res_vm[p].deficit_gw)
+    assert order_p99 == order_vm, (
+        f"Pfad-Reihenfolge ändert sich: P99 {order_p99} vs VERMEER {order_vm}"
     )

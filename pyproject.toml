@@ -42,7 +42,11 @@ classifiers = [
 
 dependencies = [
     # Model core
-    "numpy>=1.26.0,<3.0",
+    # Upper-capped <2.5: numpy 2.5.0's bundled __init__.pyi uses PEP 695
+    # `type X = ...` stub syntax, which mypy rejects under our
+    # python_version = "3.10" target ([tool.mypy] below). Lift once
+    # numpy/mypy resolve this upstream.
+    "numpy>=1.26.0,<2.5",
     # Streamlit UI + companion charts. The compare view is part of the
     # OSS deliverable, not an optional extra; Streamlit Community Cloud
     # installs the base dependency set automatically. Anyone who really

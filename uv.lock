@@ -559,7 +559,7 @@ requires-dist = [
     { name = "enesys", extras = ["dev"], marker = "extra == 'all'" },
     { name = "matplotlib", specifier = ">=3.8.0,<4.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10,<2.0" },
-    { name = "numpy", specifier = ">=1.26.0,<3.0" },
+    { name = "numpy", specifier = ">=1.26.0,<2.5" },
     { name = "pandas", specifier = ">=2.1.0,<3.0" },
     { name = "plotly", specifier = ">=5.18.0,<7.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.5,<5.0" },

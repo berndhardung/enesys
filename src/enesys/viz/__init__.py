@@ -25,6 +25,11 @@ from enesys.viz.charts.rampup import (
     compute_mix_rampup_data,
     render_mix_rampup_grid,
 )
+from enesys.viz.charts.regret_matrix import (
+    compute_fullsystem_matrix_data,
+    compute_regret_matrix_data,
+    render_regret_matrix,
+)
 from enesys.viz.charts.stress import (
     compute_stress_rampup_data,
     render_stress_rampup_grid,
@@ -121,4 +126,7 @@ __all__ = [
     "render_stress_rampup_grid",
     "compute_tornado_data",
     "render_tornado_sensitivity",
+    "compute_regret_matrix_data",
+    "compute_fullsystem_matrix_data",
+    "render_regret_matrix",
 ]

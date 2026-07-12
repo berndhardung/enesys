@@ -1182,6 +1182,11 @@ def kkw_epr_startjahr(camp: str) -> int:
         return override
     grad = KKW_REALIZATION_BY_CAMP.get(camp, 0.40)
     t_build = min(KKW_EPR_PLAN_YEARS / max(1e-9, grad), KKW_EPR_T_CAP)
+    # round() ergibt für neutral_default 2047 (t_build 17,5 auf der .5-Kante).
+    # Bridge-Phase/Buch nutzen 2046 als nominales IBN-Jahr (Abrundung der
+    # Bauzeit-Vollendung). Die ~1-Jahr-Differenz ist immateriell für die
+    # Pfad-Aussagen und bewusst nicht angeglichen — eine Angleichung verschöbe
+    # alle ausgelieferten KKW-LCOE/CO₂-Werte um ~0,01 ct / ~11 Mt ohne Gewinn.
     return KKW_EPR_APPROVAL_YEAR + int(round(t_build))
 
 

@@ -129,3 +129,64 @@ def test_baseline_winner_unchanged_when_override_matches_neutral_default():
     # 2047 entspricht dem aktuellen neutral_default-Startjahr.
     analysis = nuclear_start_year_regret_analysis([2047])
     assert analysis[0].minimax_winner is baseline_winner
+
+
+def test_ranking_robust_over_nuclear_start_year():
+    """Härtungs-Gate: Das Ranking hält über das KKW-Startjahr.
+
+    Darf nicht an einer IBN-Punktannahme hängen: über den ganzen plausiblen
+    Korridor (2034-2050) gilt, dass EE-GAS Minimax-Gewinner bleibt und beide
+    KKW-Politiken höhere Max-Reue als WEITER-SO behalten. Die KKW-Reue wird
+    vom strukturellen Kostennachteil in der EE-Welt getrieben, nicht vom
+    IBN-Timing.
+    """
+    for p in nuclear_start_year_regret_analysis(range(2034, 2051, 2)):
+        assert p.minimax_winner is PolicyChoice.EE_GAS, (
+            f"IBN {p.nuclear_start_year}: Gewinner {p.minimax_winner.name} ≠ EE-GAS"
+        )
+        mr = p.max_regret_per_policy
+        wso = mr[PolicyChoice.WEITERSO]
+        assert mr[PolicyChoice.KKW_GAS] > wso and mr[PolicyChoice.KKW_H2] > wso, (
+            f"IBN {p.nuclear_start_year}: KKW-Reue nicht über WEITER-SO"
+        )
+
+
+def test_neutral_default_never_worst_world(matrix):
+    """Das Dashboard zeigt neutral_default als ausgegraute Referenz und rahmt die
+    Max-Reue gegen die Lager-Extreme. Das gilt nur, solange neutral für *keine*
+    Politik die Worst-World (argmax der Reue) ist. Bricht das (Param-Shift), muss
+    der Build brechen — nicht das ausgelieferte Bild.
+    """
+    by_policy: dict[PolicyChoice, dict[str, float]] = {}
+    for c in matrix:
+        by_policy.setdefault(c.policy, {})[c.world] = c.regret_ct_kwh
+    for policy, worlds in by_policy.items():
+        worst_world = max(worlds, key=lambda w: worlds[w])
+        assert worst_world != "neutral_default", (
+            f"{policy.name}: neutral_default ist Worst-World — Referenz-Rahmung bricht"
+        )
+
+
+def test_regret_not_voll_artifact():
+    """Härtungs-Gate (#3): Die Reue ist echte Kosten, kein VOLL-Artefakt.
+
+    Das Modell bepreist ungedeckte Energie als value-of-lost-load (VOLL) statt
+    sie als infeasible zu flaggen. Damit die €/Jahr-„Kosten des Irrtums" nicht in
+    Wahrheit „Kosten der nicht gedeckten Energie" sind, muss der VOLL-Anteil an
+    der LCOE vernachlässigbar sein. Default-Parametrisierung: endogener
+    Reserve-/Cap-Aufbau drückt unserved ≈ 0. Schwelle 1 % der LCOE je Pfad×Welt.
+    """
+    from enesys.core.path_model import compute_path
+
+    years = list(range(2026, 2056))
+    for world in CAMP_WORLDS:
+        for pid in ("weiterso", "bestand", "ee_gas", "ee_h2", "kkw_gas", "kkw_h2"):
+            results = compute_path(pid, years, camp=world)
+            lcoe = sum(r.lcoe_ct_kwh for r in results)
+            voll = sum(
+                (getattr(r, "lcoe_components", {}) or {}).get("voll_unserved", 0.0) for r in results
+            )
+            share = (voll / lcoe) if lcoe else 0.0
+            assert share < 0.01, (
+                f"{pid} in {world}: VOLL-Anteil {share:.1%} ≥ 1 % — Reue wäre VOLL-kontaminiert"
+            )

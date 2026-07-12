@@ -607,6 +607,32 @@ mit dem Inertia-Procurement begonnen.
 | Default | 2,2 | bei -10°C Außentemperatur |
 | Bandbreite | 1,8 - 2,8 | je nach Anlagengeneration |
 
+### `import_max_gw` — Import-Cap und VERMEER-Gegencheck
+
+| | Wert | Quelle |
+|---|---|---|
+| Default / P95 (Event-Mittel) | 8 GW | `ENTSO-E ERAA-2023` — pan-europäische Dunkelflaute-Korrelation 70-80 % |
+| VERMEER-Variante (P99 + Import-Kollaps) | 4 GW | `VERMEER-2023` |
+
+`import_max_gw` ist ein **Phasen-Mittel** über die Dunkelflaute-Dauer, kein
+Stunden-Peak. Der VERMEER-Schlussbericht (DLR/KIT, AMIRIS-Marktkopplung über
+Europa, TYNDP-2022 „Distributed Energy", Modelljahr 2035, 14-Tage-Extrem­ereignis
+kalibriert am Winter 1996/97) ist der externe Plausibilitäts-Anker für genau
+diese Annahme. Kernbefund: In den ~7 tiefsten Knappheitsstunden geht der
+**effektive Importbeitrag gegen null** — die Nachbarn sind gleichzeitig knapp
+(BE/FR/NL) oder die Leitungen voll ausgelastet (AT/CH/CZ/PL/SE/NO); eine Erhöhung
+der Austauschkapazität auf 120 %/150 % entlastet die Knappheit nicht wesentlich.
+Da der Modell-Wert ein 14-Tage-Mittel ist (nicht der Stunden-Peak), härtet die
+Factory `vermeer_import_collapse_winter_stress_params()` den Import auf die halbe
+Default-Headroom (4 GW), statt auf die physikalisch unplausible Voll-Isolation
+(0 GW). Die Variante ist eine **zusätzliche Robustheitsspalte** neben LOLE-P99,
+keine Änderung der P99-Default-Leiter.
+
+**Preisaufschlag-Anker (Phasen-Mittel vs. Peak):** VERMEER findet im 14-Tage-Event
+einen mittleren Großhandelspreis-Anstieg DE **+237 €/MWh** — deckt sich mit den
+Nicht-Defizit-Stufen des Modells (200-350 €/MWh). Der Stunden-Peak liegt höher:
+VERMEER zeigt **7 h am Price-Cap von 10.000 €/MWh**; reale Dez-2024-Spitze ~960 €/MWh.
+
 ---
 
 ## K · BACKUP SIZING
@@ -848,6 +874,7 @@ im Modell aktiv konsumiert werden, ist die Stelle in
 | `AMPRION-2024-DEZ` | Amprion: Marktbericht Dezember 2024 (11-tägige Dunkelflaute) | https://www.amprion.net | Januar 2025 |
 | `ENTSO-E` | ENTSO-E: Transparency Platform (Strom-Echtzeit-Daten) | https://transparency.entsoe.eu | laufend |
 | `DWD-DUNKELFLAUTEN` | DWD: Witterungsanalysen 2024 — kalte Dunkelflauten | https://www.dwd.de | 2024-2025 |
+| `VERMEER-2023` | VERMEER-Schlussbericht: „Versorgungssicherheit in Deutschland und Mitteleuropa während Extremwetter-Ereignissen — Der Beitrag des transnationalen Stromhandels bei hohen Anteilen erneuerbarer Energien" (DLR/KIT, FKZ 03EI1010, AMIRIS-Marktkopplung). Externer Anker für Import-Cap und Knappheitspreise in der korrelierten Dunkelflaute. | https://elib.dlr.de/196641/ | 2023 |
 
 ### NIMBY conflicts and reform levers
 

@@ -29,6 +29,8 @@ Beitrag eines neuen Sets
 Verfügbare Substrate
 --------------------
 - ``ariadne_pypsa`` — PyPSA-DE / Ariadne-Substrat, EE-leaning.
+- ``nea_pcge`` — IEA/NEA PCGE 2020, atom-orientiert.
+- ``ise_lcoe`` — Fraunhofer ISE 2024, deutsches EE-nahes Substrat.
 """
 
 from __future__ import annotations
@@ -49,6 +51,13 @@ except ImportError:
     pass
 else:
     PARAM_SETS[NEA_PCGE.name] = NEA_PCGE
+
+try:
+    from enesys.core.param_sets.ise_lcoe import ISE_LCOE
+except ImportError:
+    pass
+else:
+    PARAM_SETS[ISE_LCOE.name] = ISE_LCOE
 
 
 def get(name: str) -> ParamSet:

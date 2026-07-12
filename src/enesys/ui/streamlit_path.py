@@ -1,4 +1,4 @@
-"""Streamlit compare view: anchor camp vs. variant camp, six charts.
+"""Streamlit compare view: anchor camp vs. variant camp, full chart stack.
 
 Layout
 ------
@@ -55,7 +55,7 @@ QP_ANCHOR = "anchor"
 QP_VARIANT = "variant"
 QP_MOBILE = "mobile"
 QP_CHART = "chart"
-ALL_CHARTS_KEY = "__all__"  # sentinel: render the full six-chart stack
+ALL_CHARTS_KEY = "__all__"  # sentinel: render the full chart stack
 
 
 # ---------------------------------------------------------------------------
@@ -267,6 +267,12 @@ def _apply_pending_state_transitions() -> None:
     if overrides:
         st.session_state.variant_radio = INDIVIDUELL_KEY
         st.session_state.prev_variant_radio = INDIVIDUELL_KEY
+        # Keep the language-keyed widget in sync with this programmatic
+        # promotion (the widget key, once in session_state, takes precedence
+        # over ``index=``, so the displayed marker would otherwise lag).
+        wkey = st.session_state.get("_variant_widget_key")
+        if wkey:
+            st.session_state[wkey] = INDIVIDUELL_KEY
         st.query_params[QP_VARIANT] = INDIVIDUELL_KEY
 
 
@@ -313,11 +319,32 @@ def _render_sidebar(lang: str, texts: Any) -> tuple[str, str, dict[str, float], 
     st.query_params[QP_ANCHOR] = anchor_camp
 
     variant_options = anchor_camps + [INDIVIDUELL_KEY]
+    # ``variant_radio`` stays the app-state slot the transition machine reads
+    # and writes; the *widget* carries the language in its key so a language
+    # switch remounts it fresh and honours ``index=`` (a fixed key would keep
+    # the value but drop the visual marker after the option relabel). The
+    # on-change callback mirrors the widget back into the app-state slot
+    # before the next run's transition reconciliation reads it.
+    vkey = f"variant_radio_widget_{lang}"
+    st.session_state["_variant_widget_key"] = vkey
+
+    def _sync_variant() -> None:
+        st.session_state.variant_radio = st.session_state[vkey]
+
+    # ``index=`` only on the fresh mount (key not yet in session_state) — on a
+    # language switch that seeds the new widget from the app-state slot; on
+    # steady-state reruns the widget value is authoritative, and omitting
+    # ``index=`` avoids Streamlit's "default value with Session State" warning.
+    variant_kwargs: dict[str, Any] = {}
+    if vkey not in st.session_state:
+        variant_kwargs["index"] = variant_options.index(st.session_state.variant_radio)
     variant_camp = st.sidebar.radio(
         variant_label,
         options=variant_options,
         format_func=lambda cid: _camp_label(cid, lang),
-        key="variant_radio",
+        key=vkey,
+        on_change=_sync_variant,
+        **variant_kwargs,
     )
 
     diff_camp = st.session_state.get("last_real_variant", variant_camp)
@@ -353,15 +380,12 @@ def _slider_widget(key: str, spec: SliderSpec, lang: str) -> None:
     label = spec.label_en if lang == "en" else spec.label_de
     tooltip_text = spec.tooltip_en if lang == "en" else spec.tooltip_de
     source_label = "Source" if lang == "en" else "Quelle"
-    sources_link_label = "sources page" if lang == "en" else "Quellenseite"
-    # Path-relative deep link (Streamlit ≥1.36 routes st.Page via url_path, not
-    # ``?page=``): from /charts → /sources?tag=…&lang=…. Carrying ``lang`` keeps
-    # the language sticky on reload/share of the deep link.
-    help_md = (
-        f"{tooltip_text}\n\n"
-        f"📖 *{source_label}:* `{spec.source_tag}` "
-        f"([{sources_link_label}](sources?tag={spec.source_tag}&lang={lang}))"
-    )
+    # Description + source tag live in the native ``help`` tooltip — the most
+    # compact affordance. The tag is plain text, NOT a markdown link: Streamlit
+    # renders links inside hover tooltips but they are not clickable (the popover
+    # dismisses before the anchor receives the click). The Sources page is
+    # reachable via the top navigation; it auto-opens a tag with ``?tag=…``.
+    help_md = f"{tooltip_text}\n\n📖 *{source_label}:* `{spec.source_tag}`"
     container = st.sidebar if spec.group == "top" else st
     container.slider(
         label,
@@ -454,18 +478,29 @@ def _render_chart_selector(lang: str) -> str:
         spec = CHARTS_BY_ID[cid]
         return spec.title_en if lang == "en" else spec.title_de
 
+    # The selection lives in an app-controlled slot (``active_chart``), not
+    # the widget key. The widget key carries the language, so a language
+    # switch remounts the radio as a fresh widget — Streamlit then honours
+    # ``index=`` and re-marks the selection. Reusing a single fixed key would
+    # keep the value but drop the visual marker after every option relabel.
     if "active_chart" not in st.session_state:
         qp = st.query_params.get(QP_CHART)
         st.session_state.active_chart = qp if qp in options else options[0]
 
+    ckey = f"active_chart_widget_{lang}"
+    chart_kwargs: dict[str, Any] = {}
+    if ckey not in st.session_state:
+        chart_kwargs["index"] = options.index(st.session_state.active_chart)
     selected = st.radio(
         "Chart",
         options=options,
         format_func=_fmt,
         horizontal=True,
-        key="active_chart",
+        key=ckey,
         label_visibility="collapsed",
+        **chart_kwargs,
     )
+    st.session_state.active_chart = selected
     if st.query_params.get(QP_CHART) != selected:
         st.query_params[QP_CHART] = selected
     return selected
